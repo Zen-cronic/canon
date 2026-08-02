@@ -1,0 +1,40 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# Agent / tooling state
+.claude/settings.local.json
+.playwright-mcp/
+test-results/
+playwright-report/
+docs/overnight/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+.next/
+dist/
+build/
+.turbo/
+
+# Data / build output
+data/
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# OS
+.DS_Store

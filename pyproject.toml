@@ -1,0 +1,13 @@
+[project]
+name = "datahub-hack"
+version = "0.1.0"
+description = "Build with DataHub: The Agent Hackathon — workspace"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "acryl-datahub>=1.6.0.17",
+    # floor forces a pydantic-core with cp314 wheels; older 2.33.x sdist has no 3.14 wheel
+    "pydantic>=2.13.4",
+]
+
+[tool.poetry]
+package-mode = false
