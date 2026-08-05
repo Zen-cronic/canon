@@ -20,6 +20,7 @@ import { fileURLToPath } from "node:url";
 import type { ResolveResult } from "../agent/resolve.ts";
 import { shortUrn } from "../agent/writeback.ts";
 import { THRESHOLDS } from "../agent/rules.ts";
+import type { DownstreamDelta } from "../eval/downstream.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(HERE, "..", "..", "out");
@@ -46,6 +47,8 @@ export type FilmData = {
   price?: PriceDelta | undefined;
   mode: "mock" | "live";
   serverInfo?: string | undefined;
+  /** Before/after retrieval measurement. Absent if the demo skipped it. */
+  downstream?: DownstreamDelta[] | undefined;
 };
 
 const usd = (n: number): string =>
@@ -130,6 +133,27 @@ function payload(data: FilmData): string {
       })),
     },
     price: data.price ?? null,
+    downstream: (data.downstream ?? []).map((d) => ({
+      subject: d.question.subject,
+      question: d.question.question,
+      groundTruth: d.question.groundTruth,
+      hasAnswer: d.question.acceptable.length > 0,
+      trapLabel: d.question.trap ? shortUrn(d.question.trap) : null,
+      strategies: d.before.map((b) => {
+        const a = d.after.find((s) => s.strategy === b.strategy);
+        return {
+          id: b.strategy,
+          describes: b.describes,
+          correctBefore: b.rankOfCorrect,
+          correctAfter: a?.rankOfCorrect ?? null,
+          trapBefore: b.trapRank,
+          trapAfter: a?.trapRank ?? null,
+          offeredBefore: b.offeredCount,
+          offeredAfter: a?.offeredCount ?? 0,
+          pickAfter: a?.pick ? shortUrn(a.pick) : null,
+        };
+      }),
+    })),
     stats: data.stats,
     mode: data.mode,
     thresholds: THRESHOLDS,
@@ -270,6 +294,20 @@ ${esc(price.canonical.query)}
     <p class="verify" id="verify"></p>
     <p class="ask-twice" id="ask-twice"></p>
   </div>
+</section>
+
+<section class="panel" id="panel-downstream">
+  <h2>What that changed for the next agent</h2>
+  <p class="lede">The write-back only matters if somebody else is better off. So: three stock
+  retrieval strategies, run over this same catalog before and after the ruling landed. They read
+  <code>search</code> and <code>get_entities</code> and nothing else —
+  <code>src/eval/downstream.ts</code> imports none of canon's rules, scorer or resolver.</p>
+  <div id="downstream"></div>
+  <p class="lede downstream-note">The honest result is in the second row of each block. A
+  governance-aware client already ranked the right table first on this catalog — the description,
+  the owner and the Certified tag were enough, and the ruling did not have to fix that. What
+  changed is that the staging copy behind the wrong board number stopped being served at all.
+  A client that reads no metadata is unaffected either way.</p>
 </section>
 
 <section class="panel panel-abstain">
@@ -414,6 +452,23 @@ code { font-family: var(--mono); font-size: 0.92em; }
 .verdict-mech { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
 .verdict-text { margin: 10px 0 0; }
 
+.ds-block { margin: 22px 0 6px; }
+.ds-q { font-size: 15px; font-weight: 600; }
+.ds-gt { color: var(--dim); font-size: 13px; margin-top: 2px; }
+.ds-table { width: 100%; border-collapse: collapse; font-size: 13.5px; margin-top: 10px; }
+.ds-table th { text-align: left; font-weight: 500; color: var(--dim); font-size: 11.5px;
+  text-transform: uppercase; letter-spacing: .06em; padding: 0 8px 6px; }
+.ds-table td { padding: 10px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+.ds-name { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+.ds-desc { font-family: var(--sans, inherit); font-size: 12.5px; color: var(--dim);
+  white-space: normal; max-width: 34ch; margin-top: 3px; }
+.ds-cell { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+.ds-verdict { font-family: var(--mono); font-size: 11.5px; text-align: right; white-space: nowrap; }
+.ds-ar { color: var(--dim); }
+.ds-ok { color: var(--win); }
+.ds-bad { color: var(--lose); }
+.ds-flat { color: var(--dim); }
+.downstream-note { margin-top: 18px; }
 .baselines { width: 100%; border-collapse: collapse; font-size: 14px; }
 .baselines td { padding: 10px 8px; border-top: 1px solid var(--line); vertical-align: top; }
 .baselines .b-name { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
@@ -779,6 +834,56 @@ const JS = `
       (b.correct ? "CORRECT" : "WRONG") + "</td>";
     bt.appendChild(tr);
   });
+
+  // Downstream retrieval, before and after the write-back.
+  var dsRoot = document.getElementById("downstream");
+  var dsPanel = document.getElementById("panel-downstream");
+  if (!D.downstream || !D.downstream.length) {
+    if (dsPanel) dsPanel.hidden = true;
+  } else {
+    D.downstream.forEach(function (q) {
+      var block = document.createElement("div");
+      block.className = "ds-block";
+      var head =
+        '<div class="ds-q">' + q.question + "</div>" +
+        '<div class="ds-gt">correct answer: ' + q.groundTruth + "</div>";
+      var rowsHtml = q.strategies.map(function (s) {
+        function rank(n) { return n === null ? "not served" : "#" + n; }
+        var correctCell, trapCell, verdict;
+        if (!q.hasAnswer) {
+          var same = s.correctBefore === s.correctAfter && s.offeredBefore === s.offeredAfter;
+          correctCell = '<span class="ds-flat">no right answer to rank</span>';
+          trapCell = '<span class="ds-flat">—</span>';
+          verdict = same
+            ? '<span class="ds-ok">ordering identical</span>'
+            : '<span class="ds-bad">ordering moved</span>';
+        } else {
+          correctCell = rank(s.correctBefore) + ' <span class="ds-ar">→</span> ' + rank(s.correctAfter);
+          var gone = s.trapBefore !== null && s.trapAfter === null;
+          trapCell =
+            '<span class="' + (s.trapBefore === null ? "ds-ok" : "ds-bad") + '">' + rank(s.trapBefore) + "</span>" +
+            ' <span class="ds-ar">→</span> ' +
+            '<span class="' + (s.trapAfter === null ? "ds-ok" : "ds-bad") + '">' + rank(s.trapAfter) + "</span>";
+          verdict = gone
+            ? '<span class="ds-ok">impostor suppressed</span>'
+            : '<span class="ds-flat">unchanged</span>';
+        }
+        return (
+          '<tr><td class="ds-name">' + s.id + '<div class="ds-desc">' + s.describes + "</div></td>" +
+          '<td class="ds-cell">' + correctCell + "</td>" +
+          '<td class="ds-cell">' + trapCell + "</td>" +
+          '<td class="ds-verdict">' + verdict + "</td></tr>"
+        );
+      }).join("");
+      block.innerHTML =
+        head +
+        '<table class="ds-table"><thead><tr>' +
+        "<th>strategy</th><th>the right table</th><th>" +
+        (q.trapLabel ? "the impostor (" + q.trapLabel + ")" : "the impostor") +
+        "</th><th></th></tr></thead><tbody>" + rowsHtml + "</tbody></table>";
+      dsRoot.appendChild(block);
+    });
+  }
 
   // The plan, then the fulcrum click, then what landed.
   var planList = document.getElementById("plan");

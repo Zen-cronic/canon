@@ -9,6 +9,7 @@ import type { MockDataHubClient } from "../src/datahub/mock.ts";
 import { applyApproved, resolve } from "../src/agent/resolve.ts";
 import { shortUrn } from "../src/agent/writeback.ts";
 import { writeFilm, type PriceDelta } from "../src/report/film.ts";
+import { DOWNSTREAM_QUESTIONS, measure, type DownstreamDelta } from "../src/eval/downstream.ts";
 
 /**
  * Prices the error with a real warehouse query. Optional: if DuckDB is not
@@ -61,6 +62,14 @@ async function main(): Promise<void> {
 
   const QUESTION = "Where do I get customer orders?";
   const SUBJECT = "customer orders";
+
+  // Snapshot how a stock retrieval client answers BEFORE anything is written.
+  // Has to happen here, before the first resolve, or there is nothing to
+  // compare the post-ruling catalog against.
+  const downstreamBefore = new Map<string, Awaited<ReturnType<typeof measure>>>();
+  for (const q of DOWNSTREAM_QUESTIONS) {
+    downstreamBefore.set(q.subject, await measure(client, q));
+  }
 
   head(1, `A data consumer asks: "${QUESTION}"`);
 
@@ -134,7 +143,41 @@ async function main(): Promise<void> {
   );
   console.log(`\n  ${C.dim}The agent's job is to not be needed twice.${C.reset}`);
 
-  head(7, "When the graph genuinely can't decide");
+  head(7, "What that changed for everyone else");
+  const downstream: DownstreamDelta[] = [];
+  for (const q of DOWNSTREAM_QUESTIONS) {
+    downstream.push({
+      question: q,
+      before: downstreamBefore.get(q.subject)!,
+      after: await measure(client, q),
+    });
+  }
+  const hero = downstream.find((d) => d.question.subject === SUBJECT);
+  console.log(
+    `\n  ${C.dim}Three stock retrieval strategies over the same catalog, before and after the ruling.${C.reset}`,
+  );
+  console.log(`  ${C.dim}None of them imports canon's rules, scorer or resolver.${C.reset}\n`);
+  for (const b of hero?.before ?? []) {
+    const a = hero?.after.find((s) => s.strategy === b.strategy);
+    const pos = (n: number | null) => (n === null ? "not served" : `#${n}`);
+    const gone = b.trapRank !== null && a?.trapRank === null;
+    console.log(`  ${C.yellow}${b.strategy.padEnd(18)}${C.reset}`);
+    console.log(
+      `  ${" ".repeat(18)} the right table  ${pos(b.rankOfCorrect)} → ${pos(a?.rankOfCorrect ?? null)}`,
+    );
+    console.log(
+      `  ${" ".repeat(18)} the impostor     ${C.red}${pos(b.trapRank)}${C.reset} → ${gone ? `${C.green}not served${C.reset}` : `${C.red}${pos(a?.trapRank ?? null)}${C.reset}`}`,
+    );
+  }
+  console.log(
+    `\n  ${C.dim}A governance-aware client already ranked the right table first — the ruling did not${C.reset}`,
+  );
+  console.log(
+    `  ${C.dim}have to fix that. What it fixed is that the staging copy stopped being offered.${C.reset}`,
+  );
+  console.log(`  ${C.dim}Run \`npm run downstream\` for the full table, including the abstain control.${C.reset}`);
+
+  head(8, "When the graph genuinely can't decide");
   const abstain = await resolve(client, {
     subject: "daily revenue",
     question: "What's our daily revenue?",
@@ -148,7 +191,7 @@ async function main(): Promise<void> {
 
   const price = priceDelta();
   if (price) {
-    head(8, "What the wrong table costs");
+    head(9, "What the wrong table costs");
     console.log(
       `\n  from the staging copy    ${C.red}$${price.wrong.revenueUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })}${C.reset}`,
     );
@@ -169,6 +212,7 @@ async function main(): Promise<void> {
     stats,
     price,
     mode: client.mode,
+    downstream,
   });
   console.log(`\n${C.dim}Full evidence report written to ${out}${C.reset}`);
   console.log(`${C.dim}Open it in a browser — it is self-contained, no server needed.${C.reset}`);
