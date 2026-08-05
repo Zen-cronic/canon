@@ -21,7 +21,9 @@
     "poison": "node scripts/poison.ts",
     "ask-once": "node scripts/ask-once.ts",
     "price": "python3 bridge/price_delta.py",
-    "rules": "node scripts/rules.ts"
+    "rules": "node scripts/rules.ts",
+    "downstream": "node scripts/downstream.ts",
+    "downstream:ci": "node scripts/downstream.ts --ci"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

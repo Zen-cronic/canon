@@ -36,6 +36,12 @@ jobs:
       - name: Un-stacked eval (gate — README numbers must reproduce)
         run: npm run eval:ci
 
+      # The README publishes what the write-back did to a stock retrieval
+      # client, including the part where one strategy does not improve. This
+      # gate asserts both directions: the improvement AND the flat result.
+      - name: Downstream retrieval delta (gate — including the negative result)
+        run: npm run downstream:ci
+
       - name: Demo runs end to end with no credentials
         run: npm run demo
 
