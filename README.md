@@ -40,7 +40,7 @@ rather not run anything.
 npm run poison        # break the winner on purpose; watch the ruling move
 npm run eval          # the ablation, and 24 scenarios nobody hand-wrote
 npm run downstream    # what the write-back did to a stock retrieval client
-npm test              # 32 tests
+npm test              # 39 tests
 npm run rules         # the 22 weighted rules, printed from the array that runs
 ```
 
@@ -95,9 +95,20 @@ undocumented table never surfaces above a production one. Relevant and
 trustworthy are not the same thing, and a tier is how most catalogs encode the
 difference.
 
-canon does not replace that. It **reads** it: `tag.certified` is one of the 22
-rules, worth +16 because the organisation has already said something out loud.
-Governance signals are evidence, and canon is a consumer of them.
+canon does not replace that. It **reads** it. `governance.tier` is one of the 22
+rules, and it walks the ladder the catalog already declared:
+
+| the catalog says | canon scores it | |
+|---|---|---|
+| `Tier1`, `Gold`, or `Certified` | **+16** | reviewed, owned, documented — someone signed off |
+| `Tier2`, `Silver` | **+6** | team-owned, but not to the top standard |
+| `Tier3`, `Bronze` | **−12** | temporary or personal, usually on a retention clock |
+| nothing | no hit | an absence, not an accusation |
+
+Read off `globalTags` or `glossaryTerms`, whichever the organisation used.
+`Production` is deliberately **not** a tier: it says which environment an asset
+lives in, not how far it can be trusted, and conflating the two is how a staging
+copy in the production account ends up outranking a reviewed mart.
 
 But tiering **ranks**, and this question needs a **ruling**. Three things an
 ordering cannot do:
@@ -116,8 +127,14 @@ ordering cannot do:
    rationale and a retraction path. `canon.status = canonical` is meaningless
    without `canon.subject`, which is why the two are always written together.
 
-So the relationship is compositional, not competitive: tiers narrow the field
-and feed the scorer; canon decides what is left and writes the decision down.
+**So canon never writes a tier.** Classifying an asset is the catalog's job, and
+it is a job DataHub already does; adjudicating between assets that are classified
+the same is the job canon is for. A test asserts that no planned mutation ever
+carries a tier tag, term or property, so the boundary is enforced rather than
+promised.
+
+The relationship is compositional, not competitive: tiers narrow the field and
+feed the scorer; canon decides what is left and writes the decision down.
 
 ## The ruling is computed, not written by a model
 

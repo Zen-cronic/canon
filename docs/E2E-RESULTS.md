@@ -140,6 +140,32 @@ did to a stock retrieval client, measured rather than asserted.
 Screenshot: `examples/screenshots/canon-06-downstream.png` (`.playwright-mcp/` is
 gitignored, so the run output is copied where a judge can actually open it).
 
+---
+
+## Fifth pass — the governance tier rule
+
+`tag.certified` generalised into `governance.tier`, which reads the trust ladder
+the catalog already declared. The point of driving this through the browser is
+that the rule table is rendered into the report, so a rule rename that silently
+changed a published score would show up here.
+
+| # | Flow | Result |
+|---|---|---|
+| 34 | Every published score is unchanged | **PASS** — 149 / 75 / −41 / −75 / −132, byte-identical |
+| 35 | The tier rule fires and carries the tier vocabulary | **PASS** — `+16 governance.tier`, "tagged Certified — the organisation's top trust tier" |
+| 36 | The old rule id is gone, not living alongside the new one | **PASS** — no `tag.certified` hit on any candidate; two rules reading one tag would double-count it |
+| 37 | The rationale names the tier in prose | **PASS** — the RESOLVED panel reads "tagged Certified — the organisation's top trust tier — reviewed, owned and documented" |
+| 38 | The falsification demo still moves the ruling | **PASS** — `npm run poison`, old winner still lands on −89 |
+
+Screenshot regenerated: `examples/screenshots/canon-02-adjudication.png` — the
+old one showed `+16 tag.certified` and is embedded at the top of the README, so
+leaving it would have published a rule name the code no longer has.
+
+The lower rungs of the ladder are not exercised by the demo catalog, which uses
+`Certified` and nothing else. They are covered in `tests/tier.test.ts` against
+synthetic catalogs, along with the guarantee that matters most here: **canon
+never plans a mutation that writes a tier.**
+
 ### What flow 30 is doing there
 
 The first honest run of this measurement contradicted the hypothesis it was

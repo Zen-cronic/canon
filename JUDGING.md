@@ -29,7 +29,8 @@ there is nothing to adjudicate.
 | `assertionRunEvent` | `assertions.passing` / `failing` / `untested` | +14 each, against a +6 cap on popularity |
 | `ownership` | `ownership.technical` / `business` / `none` | an unowned table four people query is an incident |
 | `deprecation` | `deprecation.marked` | −70; someone already said this is not it |
-| `globalTags` | `tag.certified`, `tag.deprecated` | the organisation's own signal |
+| `globalTags`, `glossaryTerms` | `governance.tier` | the trust tier the organisation already assigned: Tier 1 / Certified +16, Tier 2 +6, Tier 3 −12. canon reads the catalog's governance model and never writes one |
+| `globalTags` | `tag.deprecated` | the organisation's own signal |
 | `glossaryTerms`, `schemaMetadata.glossaryTerms` | `governance.pii_exposed`, `glossary.classified` | governance outranks convenience |
 | `siblings` | `siblings.definition` | the dbt model is the definition, the warehouse table is what you query |
 | `datasetUsageStatistics` | `usage.human_adoption`, `usage.machines_only` | deliberately weak, and that is the argument |
@@ -62,7 +63,7 @@ absence rather than the README asserting it.
 
 | Check | Command | Expect |
 |---|---|---|
-| Tests | `npm test` | 32 passing |
+| Tests | `npm test` | 39 passing |
 | Types | `npm run typecheck` | clean |
 | Zero-credential demo | `npm run demo` | full run + `out/index.html` in ~35s |
 | CI | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | typecheck, tests, the eval gate, the downstream gate, and the demo, on every push |
