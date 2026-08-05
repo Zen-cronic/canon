@@ -1,0 +1,34 @@
+
+A stock MCP client, no canon code, asking the catalog for "orders".
+server: datahub 3.4.5 — mutation tools OFF
+
+search returned 14 matches. Top 14:
+
+   postgres:ecommerce_prod.public.orders
+   looker:orders_explore
+   looker:ecommerce_model.vw_purchase_orders
+   kafka:prod.purchase_orders
+-> dbt:analytics.marts.fct_orders
+     canon.status = canonical  (for "customer orders")
+   snowflake:ANALYTICS.MARTS.FCT_ORDERS
+   snowflake:ANALYTICS.MARTS.fct_purchase_orders
+   dbt:analytics.intermediate.int_purchase_orders
+   snowflake:ANALYTICS.STAGING.stg_purchase_orders
+   postgres:ecommerce_prod.public.raw_purchase_orders
+xx bigquery:legacy_dw.reporting.orders_snapshot_2024
+     DEPRECATED by tom.becker: Frozen at 2024-12-31. Do not use for current reporting.
+xx snowflake:ANALYTICS.STAGING.STG_ORDERS
+     DEPRECATED by canon: Not canonical for "customer orders". Use dbt:analytics.marts.fct_orders instead. last written 6.0 days ago — 6
+   urn:li:document:shared-c8d7dc0d-9138-4ec8-9086-7b758e7ce3eb
+   bigquery:growth_analytics.metrics.daily_revenue
+
+The catalog now answers the question by itself: dbt:analytics.marts.fct_orders.
+1 candidate was retired by canon, with a note pointing at the winner:
+  xx snowflake:ANALYTICS.STAGING.STG_ORDERS
+A client that reads deprecation will not offer those at all.
+
+1 other candidate was already deprecated before canon ran — not canon's doing:
+  ·· bigquery:legacy_dw.reporting.orders_snapshot_2024
+
+None of this came from canon at runtime. canon wrote it and left.
+

@@ -17,7 +17,10 @@
     "lint": "tsc --noEmit",
     "ci": "npm run typecheck && npm test",
     "mcp:probe": "node scripts/mcp-probe.ts",
-    "eval:ci": "node scripts/eval.ts --ci"
+    "eval:ci": "node scripts/eval.ts --ci",
+    "poison": "node scripts/poison.ts",
+    "ask-once": "node scripts/ask-once.ts",
+    "price": "python3 bridge/price_delta.py"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",

@@ -1,0 +1,25 @@
+{
+  "quarterStart": "2026-07-01",
+  "asOf": "2026-08-03",
+  "wrong": {
+    "table": "snowflake:ANALYTICS.STAGING.STG_ORDERS",
+    "revenueUsd": 7951811.55,
+    "orders": 31748,
+    "query": "SELECT SUM(gross_cents) / 100.0 AS revenue_usd, COUNT(*) AS orders FROM stg_orders WHERE placed_at >= DATE '2026-07-01'"
+  },
+  "canonical": {
+    "table": "snowflake:ANALYTICS.MARTS.FCT_ORDERS",
+    "revenueUsd": 7121844.95,
+    "orders": 34365,
+    "query": "SELECT SUM(net_amount_cents) / 100.0 AS revenue_usd, COUNT(*) AS orders FROM fct_orders WHERE placed_at >= DATE '2026-07-01'"
+  },
+  "deltaUsd": 829966.6,
+  "deltaPct": 11.65,
+  "causes": {
+    "missingDays": 3,
+    "testOrdersIncluded": 518,
+    "refundsNotNettedUsd": 334160.03
+  },
+  "seed": 20260805,
+  "engine": "duckdb 1.5.5"
+}

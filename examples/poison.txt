@@ -1,0 +1,31 @@
+
+[1mBEFORE[0m  the catalog as shipped
+  ruling         [32mdbt:analytics.marts.fct_orders[0m
+  confidence     high
+  score          149
+  runner-up      snowflake:ANALYTICS.MARTS.FCT_ORDERS at 75
+
+[1m[31mPOISON[0m  applied to dbt:analytics.marts.fct_orders
+  [31m-[0m set deprecation.deprecated = true
+  [31m-[0m removed every owner
+  [31m-[0m failed all 3 assertions
+  [31m-[0m removed the Certified tag
+  [2mwritten to /tmp/canon-poison-7T7lhx/catalog.poisoned.json[0m
+
+[1mAFTER[0m   same code, same question, poisoned catalog
+  ruling         [32msnowflake:ANALYTICS.MARTS.FCT_ORDERS[0m
+  confidence     high
+  score          75
+  old winner     dbt:analytics.marts.fct_orders now scores [31m-89[0m
+
+  [2mwhy it lost, from the rules that fired:[0m
+     -72  assertions.failing     3 failing assertions: freshness (fct_orders built within the last 6 hours); column (order_id is unique and not null); volume (row count within 5% of 7-day average)
+     -70  deprecation.marked     deprecated in DataHub: DECOMMISSIONED. Do not use.
+     -18  ownership.none         no owner of any kind recorded
+
+[32mRULING MOVED[0m
+[2mAdjudication is a pure function of the graph, so this reproduces identically
+every run. Nothing here is replayed: there are no answer fixtures in this repo.[0m
+
+[2m(poisoned catalog left in /tmp/canon-poison-7T7lhx — pass --keep to keep it deliberately)[0m
+

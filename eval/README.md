@@ -48,9 +48,18 @@ person who wrote the adjudicator. So the scenarios here are generated.
 
 - **Ground truth is set at construction.** The generator picks an archetype,
   builds a catalog to match, and records which asset it built to be canonical —
-  before anything runs. The generator imports no rule, no weight, and never calls
-  the scorer. `grep -n "rules\|score\|adjudicate" src/eval/scenarios.ts` returns
-  nothing.
+  before anything runs. It never calls the scorer, and its only import is the
+  shared aspect types:
+
+  ```console
+  $ grep -n "^import" src/eval/scenarios.ts
+  28:import type {
+  ```
+
+  That single `import type` pulls in `../datahub/types.ts` (the DataHub payload
+  shapes) and nothing else — no `rules.ts`, no `score.ts`, no `cohort.ts`. The
+  words "rule" and "score" do appear in the file, in two comments and one table
+  description; the check that matters is the import list.
 - **Seeded, and the seed is a parameter.** `npm run eval -- --seed 99 --n 40` is
   a different draw. Names, platforms, row counts, staleness, owner names and
   which optional signals exist are all drawn from the PRNG.
