@@ -1,0 +1,74 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never cancel a deploy midway — a half-published site is worse than a stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  DATAHUB_TELEMETRY_ENABLED: "false"
+
+jobs:
+  build:
+    name: build the report from source
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      # The report's hero number ($829,966.60) comes out of the DuckDB bridge.
+      # Without Python the demo still runs, but prices nothing and the headline
+      # figure quietly disappears — so the build installs it rather than
+      # publishing a report with a hole in it.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - run: pip install .
+      - run: npm ci
+
+      # Built on every push, so what a judge opens is what this commit produces
+      # — not a checked-in artefact that may have drifted from the source.
+      - name: Generate the evidence report
+        run: npm run demo
+
+      - name: Fail if the published dollar figure is missing
+        run: |
+          grep -q '829,966.60' out/index.html \
+            || { echo "report has no priced delta — refusing to publish"; exit 1; }
+
+      - name: Assemble the site
+        run: |
+          mkdir -p _site
+          cp site/index.html _site/index.html
+          cp out/index.html _site/report.html
+          cp -r examples _site/examples
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

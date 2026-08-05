@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>canon — the catalog decides which table is real</title>
+<meta name="description" content="An agent that decides which of your five orders tables is the real one, and writes the ruling back into DataHub.">
+<style>
+  :root {
+    --bg: #e2e4dd; --panel: #eceee7; --ink: #171a1b; --dim: #5c6360;
+    --line: #c9ccc3; --accent: #ff6100; --win: #00802d; --lose: #c63838;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #171a1b; --panel: #1f2324; --ink: #e8eae4; --dim: #9aa19d; --line: #333a3b; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 40px 24px 64px; background: var(--bg); color: var(--ink);
+    font: 400 16px/1.6 var(--sans); }
+  main { max-width: 720px; margin: 0 auto; }
+  .kicker { margin: 0 0 10px; font-family: var(--mono); font-size: 11px; letter-spacing: .12em;
+    text-transform: uppercase; color: var(--dim); }
+  .kicker span { color: var(--accent); }
+  h1 { margin: 0 0 6px; font-size: clamp(30px, 6vw, 44px); line-height: 1.08; letter-spacing: -.02em; }
+  h1 em { color: var(--accent); font-style: normal; }
+  .lede { margin: 0 0 28px; color: var(--dim); }
+  .numbers { display: flex; flex-wrap: wrap; gap: 12px; align-items: stretch; margin: 0 0 10px; }
+  .num { flex: 1 1 220px; padding: 14px 16px; background: var(--panel);
+    border: 1px solid var(--line); border-radius: 10px; }
+  .num-label { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--dim); }
+  .num-value { display: block; margin-top: 4px; font-family: var(--mono); font-size: 22px; font-weight: 700; }
+  .wrong .num-value { color: var(--lose); text-decoration: line-through; text-decoration-thickness: 2px; }
+  .right .num-value { color: var(--win); }
+  .delta { margin: 0 0 30px; font-size: 15px; color: var(--dim); }
+  .delta strong { font-family: var(--mono); color: var(--lose); }
+  .cta { display: inline-block; padding: 13px 22px; background: var(--accent); color: #fff;
+    font-weight: 600; text-decoration: none; border-radius: 8px; }
+  .cta:hover { filter: brightness(.93); }
+  .note { margin: 12px 0 34px; font-size: 13px; color: var(--dim); }
+  h2 { margin: 0 0 12px; font-size: 13px; font-family: var(--mono); letter-spacing: .1em;
+    text-transform: uppercase; color: var(--dim); font-weight: 600; }
+  ul { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+  li { border-bottom: 1px solid var(--line); }
+  li a { display: flex; gap: 14px; padding: 13px 2px; color: var(--ink); text-decoration: none; }
+  li a:hover { color: var(--accent); }
+  li b { flex: 0 0 auto; font-weight: 600; }
+  li span { color: var(--dim); font-size: 14px; }
+  footer { margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--line);
+    font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+  a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <p class="kicker"><span>01</span> Two dashboards, two revenue numbers · the board deck goes out in the morning</p>
+  <h1>Can I send this <em>number</em> to the board?</h1>
+  <p class="lede">Five tables in this catalog answer to <code>orders</code>. canon follows DataHub's
+  context graph, chooses the defensible source, writes the ruling back into the catalog, and retires
+  the impostor so nobody has to ask twice.</p>
+
+  <div class="numbers">
+    <div class="num wrong">
+      <span class="num-label">the number in the deck</span>
+      <span class="num-value">$7,951,811.55</span>
+    </div>
+    <div class="num right">
+      <span class="num-label">what it actually is</span>
+      <span class="num-value">$7,121,844.95</span>
+    </div>
+  </div>
+  <p class="delta">No. It came from the wrong table — <strong>$829,966.60</strong> wrong, 11.65% overstated.</p>
+
+  <a class="cta" href="report.html">Open the evidence report &rarr;</a>
+  <p class="note">Self-contained page. Press <b>Play</b> to watch the catalog make its case, then
+  <b>what-if</b> to see the ruling move when the winner is poisoned.</p>
+
+  <h2>Everything else</h2>
+  <ul>
+    <li><a href="https://github.com/Zen-cronic/canon"><b>Source</b> <span>Apache-2.0 · run it locally with no credentials</span></a></li>
+    <li><a href="examples/"><b>examples/</b> <span>committed outputs — judge the artefacts without running anything</span></a></li>
+    <li><a href="https://github.com/Zen-cronic/canon/blob/main/JUDGING.md"><b>JUDGING.md</b> <span>every claim, and the command that reproduces it</span></a></li>
+    <li><a href="https://github.com/Zen-cronic/canon/blob/main/RUNNING-LIVE.md"><b>RUNNING-LIVE.md</b> <span>point it at a real DataHub quickstart</span></a></li>
+  </ul>
+
+  <footer>
+    This page is rebuilt from source on every push — the report you open is what the current
+    commit produces. The demo runs on a committed fixture catalog, and says so on screen.
+  </footer>
+</main>
+</body>
+</html>
