@@ -40,7 +40,7 @@ rather not run anything.
 npm run poison        # break the winner on purpose; watch the ruling move
 npm run eval          # the ablation, and 24 scenarios nobody hand-wrote
 npm run price         # the two warehouse queries behind the numbers above
-npm test              # 23 tests
+npm test              # 24 tests
 ```
 
 Against a live DataHub OSS quickstart, see [RUNNING-LIVE.md](RUNNING-LIVE.md).
@@ -110,6 +110,7 @@ scoping is the interesting part.
 | The full evidence trail | a native DataHub Document, type `Decision`, related to every candidate | `mcp:save_document` |
 | Deprecation — **on exactly one asset** | `deprecation` aspect | Python SDK |
 | On ABSTAIN: the unanswerable question | a native DataHub Incident assigned to the named owners | Python SDK |
+| On ABSTAIN: a ruling canon can no longer stand behind | retracted — the `canon.*` claim is removed | `mcp:remove_structured_properties` |
 
 Every claim is **question-scoped**. `canon.status = canonical` is always paired
 with `canon.subject`, because an asset is canonical *for a question*, never in
@@ -125,7 +126,14 @@ service writes to would be false metadata, and a losing rival definition is not
 ours to retire.
 
 Nothing is written without approval. canon plans; applying is a separate call
-that takes the plan the operator already read.
+that takes the plan the operator already read. In the report, that is a button:
+the plan is shown with the one consequential line marked, and one click applies
+it.
+
+**And it can take a claim back.** If canon ruled on a subject once and now
+abstains — because a second definition appeared, or the catalog moved under it —
+leaving the old marker would be worse than never having ruled, so abstaining
+retracts it.
 
 ## The catalog gets smarter, not just canon
 

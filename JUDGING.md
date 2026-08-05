@@ -61,7 +61,7 @@ absence rather than the README asserting it.
 
 | Check | Command | Expect |
 |---|---|---|
-| Tests | `npm test` | 23 passing |
+| Tests | `npm test` | 24 passing |
 | Types | `npm run typecheck` | clean |
 | Zero-credential demo | `npm run demo` | full run + `out/index.html` in ~35s |
 | CI | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | typecheck, tests, the eval gate, and the demo, on every push |

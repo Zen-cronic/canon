@@ -51,6 +51,17 @@ python bridge/ingest_catalog.py --gms http://localhost:8081
 Give the search and graph indices a minute to catch up before the next step;
 DataHub ingests through Kafka and the index lags the write.
 
+**The clock is rebased to now by default, and it matters.** The fixture catalog's
+timestamps are frozen at the moment it was authored. Offline that is fine — the
+mock client answers "what time is it" with the catalog's own clock. A live
+DataHub has no such notion, so an unrebased catalog ages: a day after ingestion
+everything is a day staler, and once every candidate crosses the staleness
+threshold no definition class is "standing" any more and the ABSTAIN branch stops
+firing — silently, with no error. Ingest shifts every timestamp by one offset, so
+every relative gap survives: the staging copy stays exactly 3.1 days behind the
+mart whenever you run this. Pass `--no-rebase-clock` to emit the frozen values
+instead.
+
 ## 3. Confirm which MCP tools you actually have
 
 Worth doing before trusting any tool list, including this project's:
@@ -62,11 +73,16 @@ export TOOLS_IS_MUTATION_ENABLED=true
 npm run mcp:probe
 ```
 
-On OSS v1.7.0 this prints 18 tools and confirms that `set_deprecation`,
+On OSS v1.7.0 this prints 18–20 tools and confirms that `set_deprecation`,
 `list_pending_proposals`, `propose_*`, `accept_or_reject_proposals`,
 `list_lifecycle_stages`, `find_sql_context` and `draft_sql_for_tables` are all
 **absent** — they are DataHub Cloud only. canon claims none of them. A committed
 copy of that output is in [`examples/mcp-tools.txt`](examples/mcp-tools.txt).
+
+The count varies because the tool list is not static: a freshly-ingested instance
+reported 18, and the same server reported 20 once canon had written a Document —
+the extras were `search_documents` and `grep_documents`. Reported as an
+observation; the mechanism was not confirmed.
 
 ## 4. Run canon live
 
