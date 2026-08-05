@@ -4,11 +4,14 @@
 //   3. Ask again. The catalog answers. Zero model calls.
 
 import { execFileSync } from "node:child_process";
+import { rmSync } from "node:fs";
+import { dirname } from "node:path";
 import { closeClient, createClient } from "../src/datahub/client.ts";
-import type { MockDataHubClient } from "../src/datahub/mock.ts";
+import { MockDataHubClient, resolveFixturePath } from "../src/datahub/mock.ts";
 import { applyApproved, resolve } from "../src/agent/resolve.ts";
 import { shortUrn } from "../src/agent/writeback.ts";
-import { writeFilm, type PriceDelta } from "../src/report/film.ts";
+import { poisonWinner } from "../src/eval/poison.ts";
+import { writeFilm, type PriceDelta, type WhatIf } from "../src/report/film.ts";
 import { DOWNSTREAM_QUESTIONS, measure, type DownstreamDelta } from "../src/eval/downstream.ts";
 import { allEntities, findContested, summarisePosture, type SubjectOutcome } from "../src/eval/coverage.ts";
 
@@ -255,6 +258,45 @@ async function main(): Promise<void> {
     console.log(`\n  ${C.dim}Two SELECTs against ${price.engine}. Not an estimate.${C.reset}`);
   }
 
+  // The falsification beat, computed rather than described: poison a COPY of the
+  // fixture, re-run the same rule table, and hand the report both rulings. Mock
+  // only — a demo has no business mutating a real catalog to make a point.
+  let whatIf: WhatIf | undefined;
+  const heroWinner = first.ruling.canonical;
+  if (client.mode === "mock" && heroWinner) {
+    const { path: poisonedPath, changes } = poisonWinner(resolveFixturePath(), heroWinner);
+    try {
+      const poisoned = await resolve(MockDataHubClient.load(poisonedPath), {
+        subject: SUBJECT,
+        question: QUESTION,
+        searchQuery: "orders",
+        force: true,
+      });
+      const poisonedScore = poisoned.adjudication?.scores.find((s) => s.urn === heroWinner);
+      whatIf = {
+        target: heroWinner,
+        targetLabel: shortUrn(heroWinner),
+        changes,
+        before: {
+          total: first.adjudication?.scores.find((s) => s.urn === heroWinner)?.total ?? null,
+          canonicalLabel: shortUrn(heroWinner),
+        },
+        after: {
+          total: poisonedScore?.total ?? null,
+          canonical: poisoned.ruling.canonical ?? null,
+          canonicalLabel: poisoned.ruling.canonical ? shortUrn(poisoned.ruling.canonical) : null,
+          outcome: poisoned.ruling.outcome,
+          hits: (poisonedScore?.hits ?? [])
+            .filter((h) => h.delta < 0)
+            .sort((a, b) => a.delta - b.delta)
+            .map((h) => ({ rule: h.rule, delta: h.delta, because: h.because })),
+        },
+      };
+    } finally {
+      rmSync(dirname(poisonedPath), { recursive: true, force: true });
+    }
+  }
+
   const out = writeFilm({
     hero: first,
     approved,
@@ -265,6 +307,7 @@ async function main(): Promise<void> {
     mode: client.mode,
     downstream,
     posture,
+    whatIf,
   });
   console.log(`\n${C.dim}Full evidence report written to ${out}${C.reset}`);
   console.log(`${C.dim}Open it in a browser — it is self-contained, no server needed.${C.reset}`);
