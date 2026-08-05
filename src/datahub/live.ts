@@ -398,6 +398,13 @@ export class LiveDataHubClient implements DataHubClient {
           });
           return { mutation: m, applied: true, via: `python-sdk:incidentInfo ${String(out["urn"])}`, at };
         }
+        case "removeStructuredProperty": {
+          await mcp.call("remove_structured_properties", {
+            property_urns: m.propertyUrns,
+            entity_urns: [m.entity],
+          });
+          return { mutation: m, applied: true, via: "mcp:remove_structured_properties", at };
+        }
         case "addTag":
           await mcp.call("add_tags", { tag_urns: [m.tag], entity_urns: [m.entity] });
           return { mutation: m, applied: true, via: "mcp:add_tags", at };

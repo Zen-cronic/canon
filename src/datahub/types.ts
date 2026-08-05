@@ -182,6 +182,14 @@ export type ContextDocument = {
 
 export type Mutation =
   | { kind: "setStructuredProperty"; entity: Urn; propertyUrn: Urn; values: Array<string | number> }
+  /**
+   * Retraction. If canon ruled on a subject once and now abstains — because the
+   * catalog changed under it, or a second definition appeared — leaving the old
+   * `canon.status = canonical` in place would be worse than never having ruled:
+   * every reader downstream would keep acting on a claim canon no longer stands
+   * behind. Abstaining has to be able to take a claim back.
+   */
+  | { kind: "removeStructuredProperty"; entity: Urn; propertyUrns: Urn[] }
   | { kind: "setDeprecation"; entity: Urn; deprecated: boolean; note: string }
   | { kind: "addGlossaryTerm"; entity: Urn; term: Urn }
   | { kind: "addTag"; entity: Urn; tag: Urn }

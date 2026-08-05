@@ -62,6 +62,28 @@ export function planWriteBack(ruling: Ruling, evidence: CandidateEvidence[], now
       `Owners who can decide: ${owners.join(", ") || "none recorded"}`,
     ].join("\n");
 
+    // Retract any ruling canon can no longer stand behind. Without this, a
+    // subject that was decidable last week and is contested this week keeps its
+    // old canonical marker forever, and every reader downstream keeps acting on
+    // a claim canon has just withdrawn.
+    for (const c of evidence) {
+      const props = c.entity.structuredProperties ?? [];
+      const status = props.find((p) => p.propertyUrn === CANON_STATUS_PROP);
+      const subj = props.find((p) => p.propertyUrn === CANON_SUBJECT_PROP);
+      const claimsThisSubject =
+        String(status?.values[0] ?? "") === "canonical" &&
+        String(subj?.values[0] ?? "").toLowerCase() === ruling.subject.trim().toLowerCase();
+      if (!claimsThisSubject) continue;
+      mutations.push({
+        kind: "removeStructuredProperty",
+        entity: c.entity.urn,
+        propertyUrns: [CANON_STATUS_PROP, CANON_SUBJECT_PROP, CANON_DECIDED_AT_PROP, CANON_RATIONALE_PROP],
+      });
+      summary.push(
+        `Retract the earlier canon ruling on ${shortUrn(c.entity.urn)} — canon can no longer stand behind it`,
+      );
+    }
+
     for (const c of evidence) {
       mutations.push({
         kind: "createProposal",

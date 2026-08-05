@@ -10,7 +10,7 @@
   [31m-[0m removed every owner
   [31m-[0m failed all 3 assertions
   [31m-[0m removed the Certified tag
-  [2mwritten to /tmp/canon-poison-7T7lhx/catalog.poisoned.json[0m
+  [2mwritten to /tmp/canon-poison-1rKkfT/catalog.poisoned.json[0m
 
 [1mAFTER[0m   same code, same question, poisoned catalog
   ruling         [32msnowflake:ANALYTICS.MARTS.FCT_ORDERS[0m
@@ -27,5 +27,5 @@
 [2mAdjudication is a pure function of the graph, so this reproduces identically
 every run. Nothing here is replayed: there are no answer fixtures in this repo.[0m
 
-[2m(poisoned catalog left in /tmp/canon-poison-7T7lhx — pass --keep to keep it deliberately)[0m
+[2m(poisoned catalog left in /tmp/canon-poison-1rKkfT — pass --keep to keep it deliberately)[0m
 

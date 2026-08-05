@@ -92,3 +92,28 @@ Screenshot: `examples/screenshots/canon-04-lineage.png`. The whole argument is l
 frame with the sound off: the raw table on the left, a dashed COPY edge to the
 stale landing copy, a TRANSFORMED edge to the canonical model in green, and the
 warehouse sibling beside it.
+
+---
+
+## Third pass — the fulcrum click
+
+Added after re-reading the two craft sources the build brief required. Both
+converged on the same gap: the ClickHouse carry-forward rule *"ship an
+interactive answer, not a rendered one — and the payoff card is the most
+interactive, never the least"*, and the Globot transplant *"one human fulcrum
+click"*. canon's payoff — the write-back — was the least interactive thing on
+the page: a static list of receipts that had already happened.
+
+Now the panel shows the **plan**, with the one consequential line (the
+deprecation) marked rather than buried among equals, and a single button applies
+it.
+
+| # | Flow | Result |
+|---|---|---|
+| 20 | Plan renders before anything is applied | **PASS** — 5 planned writes, receipts hidden |
+| 21 | The consequential write is marked | **PASS** — only the deprecation gets `.consequential` |
+| 22 | One click applies | **PASS** — 9 receipts cascade in |
+| 23 | Verification and the second-ask line follow | **PASS** |
+| 24 | The button states what it did, honestly | **PASS** — "Applied to the fixture graph this page was rendered from" |
+
+Screenshot: `examples/screenshots/canon-05-fulcrum.png`.

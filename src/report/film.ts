@@ -110,6 +110,7 @@ function payload(data: FilmData): string {
       because: b.because,
       correct: b.pick === data.hero.ruling.canonical || b.pick === data.hero.ruling.queryThis,
     })),
+    plan: (data.hero.plan?.summary ?? []),
     receipts: (data.approved.writeBack?.receipts ?? []).map((r) => ({
       via: r.via,
       applied: r.applied,
@@ -251,12 +252,24 @@ ${esc(price.canonical.query)}
 </section>
 
 <section class="panel">
-  <h2>What canon wrote back</h2>
-  <p class="lede">A ruling that stays in the agent is worth nothing to the next person who asks.
-  Every write below names the transport that actually carried it.</p>
-  <ul class="receipts" id="receipts"></ul>
-  <p class="verify" id="verify"></p>
-  <p class="ask-twice" id="ask-twice"></p>
+  <h2>What canon proposes to write</h2>
+  <p class="lede">A ruling that stays in the agent is worth nothing to the next person who asks — so
+  canon writes it into DataHub. But deprecating a table other people and agents trust is
+  consequential, so canon <strong>plans</strong>, and a human applies.</p>
+
+  <ul class="plan" id="plan"></ul>
+
+  <div class="approve-row" id="approve-row">
+    <button id="approve" class="btn btn-approve">Approve — apply to DataHub</button>
+    <span class="approve-note">Nothing has been written yet. This is the one decision canon does not make.</span>
+  </div>
+
+  <div id="applied" hidden>
+    <p class="applied-head">Applied. Every line names the transport that actually carried it.</p>
+    <ul class="receipts" id="receipts"></ul>
+    <p class="verify" id="verify"></p>
+    <p class="ask-twice" id="ask-twice"></p>
+  </div>
 </section>
 
 <section class="panel panel-abstain">
@@ -418,7 +431,22 @@ code { font-family: var(--mono); font-size: 0.92em; }
 .sql pre { background: #0a0d13; border: 1px solid var(--line); border-radius: 10px;
   padding: 14px; overflow-x: auto; font-size: 12px; }
 
+/* The fulcrum. The payoff card is the most interactive thing on the page, not
+   the least — the one decision canon refuses to make is the one you make. */
+.plan { list-style: none; padding: 0; margin: 0 0 18px; display: grid; gap: 8px; }
+.plan li { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 14px; font-size: 13.5px; display: flex; gap: 10px; align-items: baseline; }
+.plan li::before { content: "○"; color: var(--dim); font-family: var(--mono); }
+.plan li.consequential { border-color: rgba(255,204,102,.5); }
+.plan li.consequential::before { content: "!"; color: var(--warn); font-weight: 700; }
+.approve-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.btn-approve { background: var(--win); color: #06170f; font-size: 14px; padding: 10px 20px; }
+.approve-row.done .btn-approve { background: #1b2130; color: var(--dim); cursor: default; }
+.approve-note { color: var(--dim); font-size: 13px; }
+.applied-head { color: var(--win); font-size: 13.5px; margin: 18px 0 10px; }
 .receipts { list-style: none; padding: 0; margin: 0 0 14px; display: grid; gap: 8px; }
+.receipts li { opacity: 0; transform: translateY(4px); transition: opacity .3s, transform .3s; }
+.receipts li.on { opacity: 1; transform: none; }
 .receipts li { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
   padding: 10px 14px; display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; }
 .r-ok { color: var(--win); font-family: var(--mono); font-size: 12px; }
@@ -752,7 +780,17 @@ const JS = `
     bt.appendChild(tr);
   });
 
-  // Receipts
+  // The plan, then the fulcrum click, then what landed.
+  var planList = document.getElementById("plan");
+  D.plan.forEach(function (s) {
+    var li = document.createElement("li");
+    li.textContent = s;
+    // The deprecation is the consequential one — other people and agents act on
+    // it — so it is marked rather than hidden in a list of equals.
+    if (/^Deprecate /.test(s)) li.className = "consequential";
+    planList.appendChild(li);
+  });
+
   var rl = document.getElementById("receipts");
   D.receipts.forEach(function (r) {
     var li = document.createElement("li");
@@ -761,10 +799,29 @@ const JS = `
       '<span class="r-via" style="margin-left:auto">' + r.via + "</span>";
     rl.appendChild(li);
   });
-  document.getElementById("verify").textContent = D.verification || "";
-  document.getElementById("ask-twice").textContent =
-    "Ask the same question again and the catalog answers it: " + D.second.answeredBy +
-    ", " + D.second.reads + " graph read" + (D.second.reads === 1 ? "" : "s") + ", no adjudication at all.";
+
+  document.getElementById("approve").addEventListener("click", function apply() {
+    var row = document.getElementById("approve-row");
+    if (row.classList.contains("done")) return;
+    row.classList.add("done");
+    document.getElementById("approve").textContent = "Approved";
+    document.querySelector(".approve-note").textContent =
+      D.mode === "live"
+        ? "Applied to the DataHub instance this page was rendered from."
+        : "Applied to the fixture graph this page was rendered from.";
+    document.getElementById("applied").hidden = false;
+
+    var items = rl.querySelectorAll("li");
+    items.forEach(function (li, i) { setTimeout(function () { li.classList.add("on"); }, 90 * i); });
+
+    setTimeout(function () {
+      document.getElementById("verify").textContent = D.verification || "";
+      document.getElementById("ask-twice").textContent =
+        "Ask the same question again and the catalog answers it: " + D.second.answeredBy +
+        ", " + D.second.reads + " graph read" + (D.second.reads === 1 ? "" : "s") +
+        ", no adjudication at all.";
+    }, 90 * items.length + 200);
+  });
 
   // Abstain
   var ab = document.getElementById("abstain");

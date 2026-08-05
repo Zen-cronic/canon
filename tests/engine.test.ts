@@ -215,3 +215,35 @@ test("CONTRACT: no source file declares a canon.* property name of its own", () 
   }
   assert.deepEqual(offenders, [], "these files hard-code a canon.* URN instead of importing it");
 });
+
+test("RETRACTION: abstaining withdraws a canonical claim canon made earlier", async () => {
+  // A subject that was decidable once and is contested now. Leaving the old
+  // marker in place would be worse than never having ruled — every reader
+  // downstream keeps acting on a claim canon has just withdrawn.
+  const REVENUE = "urn:li:dataset:(urn:li:dataPlatform:snowflake,ANALYTICS.FINANCE.REVENUE_DAILY,PROD)";
+  const client = withCatalog((c) => {
+    for (const e of c.entities) {
+      if (e.urn !== REVENUE) continue;
+      e.structuredProperties = [
+        { propertyUrn: "urn:li:structuredProperty:canon.status", values: ["canonical"] },
+        { propertyUrn: "urn:li:structuredProperty:canon.subject", values: ["daily revenue"] },
+      ];
+    }
+  });
+
+  const run = await resolve(client, {
+    subject: "daily revenue",
+    question: "What is our daily revenue?",
+    searchQuery: "revenue",
+    force: true,
+    approve: true,
+  });
+
+  assert.equal(run.ruling.outcome, "ABSTAIN");
+  const retractions = run.plan!.mutations.filter((m) => m.kind === "removeStructuredProperty");
+  assert.equal(retractions.length, 1, "the stale claim must be retracted");
+  assert.equal((retractions[0] as { entity: string }).entity, REVENUE);
+  // And the retraction must actually land, so verification can pass.
+  assert.equal(run.write!.verification.ok, true, run.write!.verification.detail);
+  assert.equal(await client.getCanonRuling("daily revenue"), null);
+});

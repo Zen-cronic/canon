@@ -243,6 +243,15 @@ export class MockDataHubClient implements DataHubClient {
         else props.push({ propertyUrn: m.propertyUrn, values: m.values });
         return { ...base, applied: true, via: "fixture:structuredProperty (live -> mcp:add_structured_properties)" };
       }
+      case "removeStructuredProperty": {
+        const e = this.byUrn.get(m.entity);
+        if (e?.structuredProperties) {
+          e.structuredProperties = e.structuredProperties.filter(
+            (p) => !m.propertyUrns.includes(p.propertyUrn),
+          );
+        }
+        return { ...base, applied: true, via: "fixture:removeStructuredProperty (live -> mcp:remove_structured_properties)" };
+      }
       case "setDeprecation": {
         entity.deprecation = { deprecated: m.deprecated, note: m.note, actor: "urn:li:corpuser:canon" };
         return { ...base, applied: true, via: "fixture:deprecation (live -> python-sdk:deprecation)" };

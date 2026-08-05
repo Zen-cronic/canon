@@ -239,6 +239,8 @@ function describeMutation(m: { kind: string } & Record<string, unknown>): string
   switch (m.kind) {
     case "setStructuredProperty":
       return `set ${String(m["propertyUrn"]).split(":").pop()} on ${shortUrn(String(m["entity"]))}`;
+    case "removeStructuredProperty":
+      return `retract canon ruling on ${shortUrn(String(m["entity"]))}`;
     case "setDeprecation":
       return `deprecate ${shortUrn(String(m["entity"]))}`;
     case "addGlossaryTerm":
