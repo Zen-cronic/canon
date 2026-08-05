@@ -38,3 +38,6 @@ data/
 
 # OS
 .DS_Store
+
+# Generated demo output (regenerate with npm run demo)
+out/
