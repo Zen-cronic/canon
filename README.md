@@ -92,9 +92,9 @@ scorer, not the other way round.
 Tiering is the standard answer to this problem, and it is a good one. Classify
 assets by trust, require owners and documentation at the higher tiers, let
 retention clear out the rest, and rank search results so that a deprecated or
-undocumented table never surfaces above a production one. Relevant and
-trustworthy are not the same thing, and a tier is how most catalogs encode the
-difference.
+undocumented table never surfaces above a production one. A tier is how most
+catalogs encode the gap between what a search returns and what you should
+actually cite.
 
 canon does not replace that. It **reads** it. `governance.tier` is one of the 22
 rules, and it walks the ladder the catalog already declared:
@@ -148,11 +148,14 @@ A model's only job is to write the ruling up afterwards, and it is given the
 decision rather than asked for one — it can change the prose and nothing else
 ([`src/agent/narrate.ts`](src/agent/narrate.ts)).
 
-Popularity is worth almost nothing on purpose: `usage.human_adoption` caps at
-+6 while one passing assertion is worth +14. That asymmetry is the argument
-expressed as arithmetic. The table four analysts query every week is evidence of
-a live problem, not evidence that it is canonical — and on the demo catalog, it
-is exactly what put the wrong number in the deck.
+**Relevant and trustworthy are not the same thing**, and the rule table is that
+sentence written as arithmetic. `usage.human_adoption` caps at +6 while one
+passing assertion is worth +14: the table four analysts query every week is
+evidence of a live problem, not evidence that it is canonical.
+
+On this catalog that is not a hypothetical. The most-queried table *is* the one
+that put the wrong number in the deck, and every strategy that ranks by how
+relevant something looks picks it.
 
 Three consequences, each with a command:
 
@@ -160,7 +163,7 @@ Three consequences, each with a command:
 |---|---|
 | **It can be falsified.** `npm run poison` deprecates the winner, strips its owners and fails its assertions. The ruling moves from `dbt:analytics.marts.fct_orders` (149) to its warehouse sibling (75), and the poisoned table drops to −89 with the three rules that did it printed underneath. The script exits non-zero if the ruling does *not* move. | `npm run poison` |
 | **It can be evaluated.** 24 generated scenarios with ground truth fixed at construction. | `npm run eval` |
-| **It reproduces.** Same catalog, byte-identical ruling, every run. That is what makes the falsification demo safe to do on camera. | `npm test` |
+| **It reproduces, which is what makes it operable.** Same catalog, byte-identical ruling, every run — so it can be re-run over the whole catalog on a schedule and the diff means something. A model-based adjudicator re-run nightly produces a diff you cannot distinguish from drift. | `npm test` |
 
 ## What it writes back, and what it refuses to
 
@@ -336,6 +339,36 @@ decision.
 the same concept, so somebody has to choose. It does not mean undocumented,
 untagged or unhealthy. Catalog health dashboards are a thing DataHub already
 ships, and this is not one.
+
+### What the sweep costs
+
+Measured on the run above, not estimated:
+
+```
+55 subjects · 0 model calls · 905 graph reads · 50 ms
+                              ~16.5 graph reads and 0.9 ms per subject
+```
+
+**Zero model calls is the load-bearing number.** The decision layer is a rule
+table, so the cost of re-adjudicating an entire catalog is graph reads and
+arithmetic — no tokens, no rate limit, no per-run variance. That is what makes
+this a thing you can put on a cron rather than a thing you demo: run it nightly
+and a subject that changes bucket changed because the *graph* changed, which is
+a signal. Re-run a model-based adjudicator nightly and the diff is
+indistinguishable from drift.
+
+Two honest caveats on those numbers:
+
+- **They are the fixture path.** 0.9 ms per subject is an in-memory read, and it
+  measures the adjudicator, not a network. What it does establish is the part
+  that does not change with the transport: the read count, and the zero.
+- **Live mode is dominated by a transport bug, not by canon.** The OSS MCP
+  server leaks pooled connections after about six URNs per process, so the live
+  client budgets and recycles server processes at roughly 900 ms each, about
+  five per resolution. Reproducer and timings in
+  [`docs/UPSTREAM-NOTES.md`](docs/UPSTREAM-NOTES.md). A sweep of this size
+  against a live instance has not been run, and no number for it is published
+  here.
 
 ## How it uses DataHub
 

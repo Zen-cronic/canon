@@ -196,6 +196,35 @@ Fixed by hoisting the sweep in `scripts/demo.ts` to before the first
 the same reason. Both numbers now come from the shipped catalog and cannot drift
 apart.
 
+---
+
+## Seventh pass — full regression
+
+Run after the last change, over the regenerated page, driving the whole flow
+end to end rather than one panel.
+
+| # | Flow | Result |
+|---|---|---|
+| 44 | Page loads with zero console errors | **PASS** — 0 errors, 0 warnings, served over http |
+| 45 | All six panels present and visible | **PASS** — baselines, pricing, write-back, posture, downstream, abstain |
+| 46 | `Play` still drives every beat to completion | **PASS** — `beat-label` reaches `done` |
+| 47 | Every published score is intact after six phases of change | **PASS** — 149 / 75 / −41 / −75 / −132 |
+| 48 | The posture counts are intact | **PASS** — 55 / 14 / 1 / 40 |
+| 49 | Approve still applies and verifies | **PASS** — 9 receipts, read-back reproduced the ruling |
+
+`examples/report.html` regenerated from this run, so the committed copy a judge
+opens without running anything carries all of it.
+
+## Commands a judge can run to check any of this
+
+```bash
+npm test              # 47
+npm run eval:ci       # pick 12/12, abstain 11/12
+npm run downstream:ci # the retrieval delta, negative result included
+npm run coverage:ci   # 55 contested, 14 / 1 / 40
+npm run poison        # the ruling moves, or the script exits non-zero
+```
+
 ### What flow 30 is doing there
 
 The first honest run of this measurement contradicted the hypothesis it was
