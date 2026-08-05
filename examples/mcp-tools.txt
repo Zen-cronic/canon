@@ -1,0 +1,35 @@
+server:    datahub 3.4.5
+gms:       http://localhost:8081
+mutations: enabled
+tools:     20
+
+  add_owners                     Add one or more owners to multiple DataHub entities.
+  add_structured_properties      Add structured properties with values to multiple DataHub entities.
+  add_tags                       Add one or more tags to multiple DataHub entities or their columns (e.g., schema fields).
+  add_terms                      Add one or more glossary terms (terms) to multiple DataHub entities or their columns (e.g.
+  get_dataset_queries            Get SQL queries associated with a dataset or column to understand usage patterns.
+  get_entities                   Get detailed information about one or more entities by their DataHub URNs.
+  get_lineage                    Get upstream or downstream lineage for any entity, including datasets, schemaFields, dashb
+  get_lineage_paths_between      Get detailed lineage path(s) between two specific entities or columns.
+  grep_documents                 Search within document content using regex patterns.
+  list_schema_fields             List schema fields for a dataset, with optional keyword filtering and pagination.
+  remove_domains                 Remove domain assignment from multiple DataHub entities.
+  remove_owners                  Remove one or more owners from multiple DataHub entities.
+  remove_structured_properties   Remove structured properties from multiple DataHub entities.
+  remove_tags                    Remove one or more tags from multiple DataHub entities or their column_paths (e.g., schema
+  remove_terms                   Remove one or more glossary terms (terms) from multiple DataHub entities or their column_p
+  save_document                  Save or update a STANDALONE document in DataHub's knowledge base. Once saved,
+  search                         Search across DataHub entities using structured full-text search.
+  search_documents               Search for documents stored in the customer's DataHub deployment.
+  set_domains                    Set domain for multiple DataHub entities.
+  update_description             Update description for a DataHub entity or its column (e.g., schema field).
+
+Cloud-only tools, confirmed absent from this OSS server:
+  absent       set_deprecation
+  absent       list_pending_proposals
+  absent       propose_tags
+  absent       propose_terms
+  absent       accept_or_reject_proposals
+  absent       list_lifecycle_stages
+  absent       find_sql_context
+  absent       draft_sql_for_tables

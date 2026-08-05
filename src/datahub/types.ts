@@ -7,7 +7,7 @@
 // only the fields canon reads or writes — so the live client can populate them
 // from GraphQL / the MCP server without reshaping anything downstream.
 //
-// See docs/DATAHUB-SURFACE.md for the read/write surface and its sources.
+// The read/write surface and where each field comes from: RUNNING-LIVE.md.
 
 export type Urn = string;
 
@@ -197,7 +197,18 @@ export type Mutation =
 export type MutationReceipt = {
   mutation: Mutation;
   applied: boolean;
-  /** Populated in live mode with the MCP tool name that carried out the write. */
+  /**
+   * The transport that actually carried this write, on whichever path ran.
+   *
+   * Live: `mcp:add_structured_properties`, `mcp:save_document`,
+   * `python-sdk:deprecation`, `python-sdk:incidentInfo`.
+   * Fixture: `fixture:structuredProperty (live -> mcp:add_structured_properties)`
+   * and friends — what happened, and what would have happened live.
+   *
+   * This field used to say "the MCP tool name" while only the mock ever set it,
+   * and the mock named tools that do not exist in DataHub OSS. It is rendered
+   * into the judge-facing report, so it has to be true on both paths.
+   */
   via: string;
   at: number;
   error?: string;
