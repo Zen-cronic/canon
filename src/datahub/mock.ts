@@ -24,6 +24,14 @@ import type {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_FIXTURE = join(HERE, "..", "..", "fixtures", "catalog.json");
 
+/**
+ * The fixture `load()` would read. Exported so callers that need the file itself
+ * — the what-if beat, which poisons a copy — resolve it the same single way.
+ */
+export function resolveFixturePath(fixturePath?: string): string {
+  return fixturePath ?? process.env.CANON_FIXTURE ?? DEFAULT_FIXTURE;
+}
+
 // Property names live in one place — see properties.ts for why.
 export {
   CANON_STATUS_PROP,
@@ -64,7 +72,7 @@ export class MockDataHubClient implements DataHubClient {
   }
 
   static load(fixturePath?: string): MockDataHubClient {
-    const path = fixturePath ?? process.env.CANON_FIXTURE ?? DEFAULT_FIXTURE;
+    const path = resolveFixturePath(fixturePath);
     const raw = readFileSync(path, "utf8");
     return new MockDataHubClient(JSON.parse(raw) as CatalogFile);
   }

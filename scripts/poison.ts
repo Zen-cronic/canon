@@ -22,12 +22,12 @@
 //   npm run poison
 //   npm run poison -- --keep    leave the poisoned catalog on disk to inspect
 
-import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { rmSync } from "node:fs";
+import { dirname } from "node:path";
 import { MockDataHubClient } from "../src/datahub/mock.ts";
 import { resolve } from "../src/agent/resolve.ts";
 import { shortUrn } from "../src/agent/writeback.ts";
+import { poisonWinner } from "../src/eval/poison.ts";
 
 const FIXTURE = process.env.CANON_FIXTURE ?? "fixtures/catalog.json";
 const OPTS = {
@@ -63,27 +63,7 @@ line("runner-up", `${shortUrn(before.adjudication?.scores[1]?.urn ?? "")} at ${b
 
 // Poison
 
-const catalog = JSON.parse(readFileSync(FIXTURE, "utf8")) as {
-  entities: Array<Record<string, unknown>>;
-};
-const changes: string[] = [];
-for (const e of catalog.entities) {
-  if (e["urn"] !== winner) continue;
-  e["deprecation"] = { deprecated: true, note: "DECOMMISSIONED. Do not use." };
-  changes.push("set deprecation.deprecated = true");
-  e["owners"] = [];
-  changes.push("removed every owner");
-  const assertions = (e["assertions"] ?? []) as Array<Record<string, unknown>>;
-  for (const a of assertions) a["lastResult"] = "FAILURE";
-  changes.push(`failed all ${assertions.length} assertions`);
-  const tags = (e["tags"] ?? []) as string[];
-  e["tags"] = tags.filter((t) => !/Certified/.test(t));
-  changes.push("removed the Certified tag");
-}
-
-const dir = mkdtempSync(join(tmpdir(), "canon-poison-"));
-const poisonedPath = join(dir, "catalog.poisoned.json");
-writeFileSync(poisonedPath, JSON.stringify(catalog, null, 2));
+const { path: poisonedPath, changes } = poisonWinner(FIXTURE, winner);
 
 console.log(`\n${C.bold}${C.red}POISON${C.reset}  applied to ${shortUrn(winner)}`);
 for (const c of changes) console.log(`  ${C.red}-${C.reset} ${c}`);
@@ -123,8 +103,11 @@ console.log(
     `every run. Nothing here is replayed: there are no answer fixtures in this repo.${C.reset}\n`,
 );
 
-if (!process.argv.includes("--keep")) {
-  console.log(`${C.dim}(poisoned catalog left in ${dir} — pass --keep to keep it deliberately)${C.reset}\n`);
+if (process.argv.includes("--keep")) {
+  console.log(`${C.dim}(poisoned catalog kept at ${poisonedPath})${C.reset}\n`);
+} else {
+  rmSync(dirname(poisonedPath), { recursive: true, force: true });
+  console.log(`${C.dim}(poisoned catalog discarded — pass --keep to keep it for inspection)${C.reset}\n`);
 }
 
 process.exit(moved ? 0 : 1);
