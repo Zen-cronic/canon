@@ -85,6 +85,39 @@ product: it launders a disagreement into a fact. So the partition gates the
 scorer, not the other way round.
 ([`src/agent/cohort.ts`](src/agent/cohort.ts))
 
+## Why not just tier the catalog?
+
+Tiering is the standard answer to this problem, and it is a good one. Classify
+assets by trust, require owners and documentation at the higher tiers, let
+retention clear out the rest, and rank search results so that a deprecated or
+undocumented table never surfaces above a production one. Relevant and
+trustworthy are not the same thing, and a tier is how most catalogs encode the
+difference.
+
+canon does not replace that. It **reads** it: `tag.certified` is one of the 22
+rules, worth +16 because the organisation has already said something out loud.
+Governance signals are evidence, and canon is a consumer of them.
+
+But tiering **ranks**, and this question needs a **ruling**. Three things an
+ordering cannot do:
+
+1. **Break a tie between equals.** Once the catalog is curated, the survivors of
+   a cleanup are the assets that earned their tier — and five of them can still
+   answer to `orders`. Ranking returns them in an order. It does not say which
+   one is canonical, and it does not say the others are not.
+2. **Tell a duplicate from a different definition.** A tier says "this asset is
+   trustworthy." It cannot say "these two are the same business fact" or "these
+   two are different facts that share a word." Get that wrong and a high
+   confidence ranking is worse than no answer, because both tables really are
+   trustworthy — they just answer different questions.
+3. **Be scoped to a question.** A tier is a standing property of an asset. A
+   canon ruling is a claim about an asset *for a subject*, with a date, a
+   rationale and a retraction path. `canon.status = canonical` is meaningless
+   without `canon.subject`, which is why the two are always written together.
+
+So the relationship is compositional, not competitive: tiers narrow the field
+and feed the scorer; canon decides what is left and writes the decision down.
+
 ## The ruling is computed, not written by a model
 
 The decision comes from a table of 22 named, signed, weighted rules over real
