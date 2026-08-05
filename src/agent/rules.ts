@@ -63,8 +63,54 @@ const CERTIFIED = /(^|:)certified$/i;
 const DEPRECATED_TAG = /(^|:)deprecated$/i;
 const PII = /(pii|personal|gdpr|sensitive)/i;
 
+/**
+ * Trust tiers, as a catalog with a governance model actually records them.
+ *
+ * The convention canon reads is the common one: a small ordered ladder where
+ * the top tier means reviewed, owned and documented, and the bottom means
+ * temporary or personal. `Certified` is treated as the top tier because it is
+ * the same statement in a different vocabulary — someone signed off.
+ *
+ * `Production` is deliberately NOT a tier. It says which environment an asset
+ * lives in, not how far it can be trusted, and conflating the two is how a
+ * staging copy in the production account ends up outranking a reviewed mart.
+ */
+const TIER_PATTERNS: Array<{ level: 1 | 2 | 3; re: RegExp }> = [
+  { level: 1, re: /(^|:)(tier[\s_-]?1|gold|certified)$/i },
+  { level: 2, re: /(^|:)(tier[\s_-]?2|silver)$/i },
+  { level: 3, re: /(^|:)(tier[\s_-]?3|bronze)$/i },
+];
+
+/** What each tier is worth. Top tier keeps `Certified`'s original weight. */
+const TIER_WEIGHT: Record<1 | 2 | 3, number> = { 1: 16, 2: 6, 3: -12 };
+
+const TIER_SAYS: Record<1 | 2 | 3, string> = {
+  1: "the organisation's top trust tier — reviewed, owned and documented",
+  2: "a team-owned middle tier — owned, but not reviewed to the top standard",
+  3: "the bottom tier: temporary or personal, and usually on a retention clock",
+};
+
 function tagName(urn: Urn): string {
   return urn.split(":").pop() ?? urn;
+}
+
+/**
+ * The highest tier this asset declares, across tags and glossary terms.
+ *
+ * Highest wins when an asset carries more than one, because a catalog in the
+ * middle of a re-tiering exercise routinely has both the old and new label on
+ * the same asset, and the generous reading is the one that does not silently
+ * demote things during a migration.
+ */
+function declaredTier(c: CandidateEvidence): { level: 1 | 2 | 3; label: string } | null {
+  const labels = [...c.entity.tags, ...c.entity.glossaryTerms].map(tagName);
+  let best: { level: 1 | 2 | 3; label: string } | null = null;
+  for (const label of labels) {
+    for (const { level, re } of TIER_PATTERNS) {
+      if (re.test(label) && (best === null || level < best.level)) best = { level, label };
+    }
+  }
+  return best;
 }
 
 function hasPii(c: CandidateEvidence): boolean {
@@ -246,13 +292,21 @@ export const RULES: RuleDef[] = [
     apply: (c) => (c.entity.description ? null : hit("docs.absent", -7, "no description")),
   },
   {
-    id: "tag.certified",
-    aspect: "globalTags",
-    says: "Carries the Certified tag — the organisation has already blessed it.",
+    id: "governance.tier",
+    aspect: "globalTags / glossaryTerms",
+    says:
+      "The trust tier the organisation already assigned it — Tier 1 / Certified down to Tier 3. " +
+      "canon reads the catalog's own governance model rather than inventing a parallel one, and " +
+      "never writes a tier: classifying assets is the catalog's job, adjudicating between them is canon's.",
     apply: (c) => {
-      const t = c.entity.tags.filter((x) => CERTIFIED.test(tagName(x)));
-      if (t.length === 0) return null;
-      return hit("tag.certified", 16, "tagged Certified");
+      const tier = declaredTier(c);
+      if (!tier) return null;
+      const certified = CERTIFIED.test(tier.label);
+      return hit(
+        "governance.tier",
+        TIER_WEIGHT[tier.level],
+        `${certified ? "tagged Certified" : `tagged ${tier.label}`} — ${TIER_SAYS[tier.level]}`,
+      );
     },
   },
   {
