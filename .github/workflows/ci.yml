@@ -42,6 +42,12 @@ jobs:
       - name: Downstream retrieval delta (gate — including the negative result)
         run: npm run downstream:ci
 
+      # 14 ruled / 1 referred / 40 abstained is published in the README. Pinned
+      # exactly rather than as a threshold: a threshold would let the ruled
+      # count drift down under a green build.
+      - name: Contested-subject posture (gate — the whole catalog, not one question)
+        run: npm run coverage:ci
+
       - name: Demo runs end to end with no credentials
         run: npm run demo
 

@@ -23,7 +23,9 @@
     "price": "python3 bridge/price_delta.py",
     "rules": "node scripts/rules.ts",
     "downstream": "node scripts/downstream.ts",
-    "downstream:ci": "node scripts/downstream.ts --ci"
+    "downstream:ci": "node scripts/downstream.ts --ci",
+    "coverage": "node scripts/coverage.ts",
+    "coverage:ci": "node scripts/coverage.ts --ci"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
