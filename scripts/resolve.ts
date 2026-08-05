@@ -3,7 +3,7 @@
 //   node scripts/resolve.ts --subject "customer orders" \
 //        --question "Where do I get customer orders?" --search orders [--approve]
 
-import { createClient } from "../src/datahub/client.ts";
+import { closeClient, createClient } from "../src/datahub/client.ts";
 import { resolve } from "../src/agent/resolve.ts";
 import { shortUrn } from "../src/agent/writeback.ts";
 
@@ -57,3 +57,7 @@ console.log(
   `\ntotals: ${run.totals.modelCalls} model calls, ${run.totals.graphReads} graph reads, ${run.totals.ms}ms`,
 );
 if (run.ruling.provenance.note) console.log(`\nNOTE: ${run.ruling.provenance.note}`);
+
+// In live mode the MCP child processes keep the event loop alive.
+await closeClient(client);
+process.exit(0);

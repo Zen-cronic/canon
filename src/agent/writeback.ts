@@ -68,10 +68,16 @@ export function planWriteBack(ruling: Ruling, evidence: CandidateEvidence[], now
         entity: c.entity.urn,
         title: `Which asset is canonical for "${ruling.subject}"?`,
         body,
+        // Named owners, read off the candidates. In live mode this becomes the
+        // assignee list on a native DataHub Incident, so the question is routed
+        // to people rather than broadcast.
+        assignees: owners,
       });
     }
     summary.push(
-      `File an open question on ${evidence.length} candidates — canon abstained and will not invent a winner`,
+      `File a native DataHub Incident on ${evidence.length} candidates, assigned to ` +
+        `${owners.length ? owners.map((o) => o.split(":").pop()).join(", ") : "no recorded owner"} — ` +
+        `canon abstained and will not invent a winner`,
     );
 
     const document: ContextDocument = {

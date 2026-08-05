@@ -51,6 +51,20 @@ export type PersistedRuling = {
   rationale: string;
 };
 
+/**
+ * Shuts down anything the client is holding open. The live client owns MCP
+ * server child processes, and those keep the node event loop alive, so every
+ * entry point calls this before it finishes.
+ */
+export async function closeClient(client: DataHubClient): Promise<void> {
+  const maybe = client as { close?: () => Promise<void> };
+  if (typeof maybe.close !== "function") return;
+  // The MCP SDK's close() does not always settle once a server process has been
+  // retired, so shutdown is bounded rather than awaited indefinitely. Callers
+  // exit after this; the child processes are killed with the parent either way.
+  await Promise.race([maybe.close(), new Promise((r) => setTimeout(r, 3000))]);
+}
+
 export type ClientOptions = {
   fixturePath?: string;
   gmsUrl?: string;
@@ -68,12 +82,12 @@ export async function createClient(options: ClientOptions = {}): Promise<DataHub
     return MockDataHubClient.load(options.fixturePath);
   }
   const gmsUrl = options.gmsUrl ?? process.env.DATAHUB_GMS_URL;
-  const token = options.token ?? process.env.DATAHUB_GMS_TOKEN;
-  if (!gmsUrl || !token) {
-    throw new Error(
-      "CANON_MODE=live requires DATAHUB_GMS_URL and DATAHUB_GMS_TOKEN. See .env.example / SWAP-TO-LIVE.md.",
-    );
+  if (!gmsUrl) {
+    throw new Error("CANON_MODE=live requires DATAHUB_GMS_URL. See .env.example / RUNNING-LIVE.md.");
   }
+  // A token is optional: `datahub docker quickstart` ships with metadata service
+  // auth disabled, so a local instance needs none. Any hardened deployment does.
+  const token = options.token ?? process.env.DATAHUB_GMS_TOKEN;
   const { LiveDataHubClient } = await import("./live.ts");
   return new LiveDataHubClient(gmsUrl, token);
 }

@@ -52,7 +52,7 @@ jobs:
       - name: Install the DataHub SDK bridge
         run: pip install "acryl-datahub>=1.7.0"
 
-      - name: Bridge is syntactically valid and its CLI contract holds
+      - name: Write bridge imports and its CLI contract holds
         env:
           DATAHUB_TELEMETRY_ENABLED: "false"
-        run: python bridge/emit_deprecation.py --help
+        run: python bridge/emit_aspects.py --help

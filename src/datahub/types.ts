@@ -186,7 +186,13 @@ export type Mutation =
   | { kind: "addGlossaryTerm"; entity: Urn; term: Urn }
   | { kind: "addTag"; entity: Urn; tag: Urn }
   | { kind: "upsertDocument"; document: ContextDocument }
-  | { kind: "createProposal"; entity: Urn; title: string; body: string };
+  /**
+   * The ABSTAIN branch. In live mode this becomes a native DataHub Incident
+   * assigned to `assignees` — the owners canon read off the candidates — so the
+   * unanswerable question lands inside the catalog rather than in a message
+   * nobody can audit later.
+   */
+  | { kind: "createProposal"; entity: Urn; title: string; body: string; assignees?: Urn[] };
 
 export type MutationReceipt = {
   mutation: Mutation;
