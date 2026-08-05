@@ -72,15 +72,16 @@ test("approved write-back applies and verifies by re-reading the graph", async (
   assert.equal(run.write!.verification.reread?.canonicalUrn, ORDERS_DBT);
 });
 
-test("asking twice: the second answer comes from the graph with no model call", async () => {
+test("asking twice: the second answer comes from the graph in one read", async () => {
   const client = await createClient();
   const first = await resolve(client, { ...ordersOpts, force: true, approve: true });
   assert.equal(first.answeredBy, "agent");
-  assert.ok(first.totals.modelCalls > 0, "the first ask requires model judgment");
+  assert.ok(first.totals.graphReads > 15, "the first ask is an investigation: ~20 aspect reads");
 
   const second = await resolve(client, ordersOpts);
   assert.equal(second.answeredBy, "graph");
-  assert.equal(second.totals.modelCalls, 0, "the whole thesis: the second ask needs no model");
+  assert.equal(second.totals.graphReads, 1, "the whole thesis: the second ask is one read");
+  assert.equal(second.totals.modelCalls, 0);
   assert.equal(second.ruling.canonical, ORDERS_DBT);
 });
 
@@ -113,10 +114,18 @@ test("canon abstains rather than inventing a winner, and writes no canonical cla
   assert.equal(await client.getCanonRuling("daily revenue"), null);
 });
 
-test("a replayed ruling is always labelled as a fixture, never as live output", async () => {
+test("the ruling is computed, never replayed, and says so on its provenance", async () => {
   const client = await createClient();
   const run = await resolve(client, { ...ordersOpts, force: true });
-  if (run.ruling.provenance.source === "replay") {
-    assert.match(run.ruling.provenance.note ?? "", /FIXTURE/i);
+  assert.equal(run.ruling.provenance.source, "computed");
+  assert.equal(run.ruling.provenance.model, "none");
+  // Every candidate carries the arithmetic that produced its rank.
+  assert.ok((run.adjudication?.scores.length ?? 0) >= 2);
+  for (const s of run.adjudication!.scores) {
+    assert.equal(
+      s.total,
+      s.hits.reduce((t, h) => t + h.delta, 0),
+      `${s.urn}: reported total must equal the sum of the rules that fired`,
+    );
   }
 });

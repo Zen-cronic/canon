@@ -1,82 +1,54 @@
-// The model layer.
+// The model seam.
 //
-// Two paths, and the difference is always recorded on the ruling's provenance:
-//   live   — a real Anthropic API call (needs ANTHROPIC_API_KEY)
-//   replay — a committed fixture under fixtures/adjudications/
+// There is exactly one path here and it is a real API call. There is no fixture
+// replay, because there is nothing left for a fixture to stand in for: the
+// ruling is computed by the weighted rule table in src/agent/rules.ts, so the
+// model only ever writes prose and narrows an already-computed shortlist. When
+// no key is present, callers fall back to deterministic text and label it
+// `source: "template"`.
 //
-// Fixture adjudications were authored during development, NOT captured from a
-// recorded API session. They exist so `npm run demo` works on a clean checkout
-// with no credentials. Nothing in this repo may present a replayed ruling as
-// measured live output; `provenance.note` carries that disclaimer into every
-// rendered artifact.
+// That is a deliberate reversal of how this started. An earlier version replayed
+// the RULING itself from a subject-keyed fixture, which meant poisoning the
+// catalog changed nothing about the answer — the gathered evidence never reached
+// the verdict. Deleting the replay path was the fix, and the fixtures with it.
 
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 import type { LlmProvenance } from "./types.ts";
 
-const HERE = dirname(fileURLToPath(import.meta.url));
-const FIXTURE_DIR = join(HERE, "..", "..", "fixtures", "adjudications");
-
 export const MODEL = process.env.CANON_MODEL ?? "claude-opus-5";
-
-export const REPLAY_NOTE =
-  "REPLAYED FIXTURE — authored during development, not captured from a live API call. " +
-  "Set ANTHROPIC_API_KEY and CANON_LLM=live for a real model call.";
-
-export function fixtureKey(subject: string): string {
-  return subject
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
 
 export type LlmResult<T> = {
   value: T;
   provenance: LlmProvenance;
 };
 
-/** True when a live call is both requested and possible. */
+/** True when a live call is both possible and not switched off. */
 export function liveAvailable(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY) && process.env.CANON_LLM !== "replay";
+  return Boolean(process.env.ANTHROPIC_API_KEY) && process.env.CANON_LLM !== "off";
 }
 
-function loadFixture<T>(subject: string, phase: string): T | null {
-  const path = join(FIXTURE_DIR, `${fixtureKey(subject)}.${phase}.json`);
-  if (!existsSync(path)) return null;
-  return JSON.parse(readFileSync(path, "utf8")) as T;
+/** Why the model path is or is not active, in one line for the CLI banner. */
+export function llmStatus(): string {
+  if (process.env.CANON_LLM === "off") return "off (CANON_LLM=off) — deterministic prose";
+  if (!process.env.ANTHROPIC_API_KEY) return "not configured (no ANTHROPIC_API_KEY) — deterministic prose";
+  return `live (${MODEL})`;
 }
 
-/**
- * Asks the model for a JSON object matching `schema`, or replays a fixture.
- * Structured outputs guarantee the response parses, so there is no repair path.
- */
+/** Asks the model for a JSON object matching `schema`. Live path only. */
 export async function askJson<T>(opts: {
-  subject: string;
-  phase: string;
   system: string;
   prompt: string;
   schema: Record<string, unknown>;
   maxTokens?: number;
 }): Promise<LlmResult<T>> {
   if (!liveAvailable()) {
-    const fixture = loadFixture<T>(opts.subject, opts.phase);
-    if (fixture === null) {
-      throw new Error(
-        `No fixture for subject "${opts.subject}" phase "${opts.phase}" and no ANTHROPIC_API_KEY set.\n` +
-          `Either ask one of the subjects in fixtures/adjudications/, or set ANTHROPIC_API_KEY ` +
-          `to let canon reason about a new one. See SWAP-TO-LIVE.md.`,
-      );
-    }
-    return { value: fixture, provenance: { source: "replay", model: MODEL, note: REPLAY_NOTE } };
+    throw new Error("askJson called with no ANTHROPIC_API_KEY. Callers must check liveAvailable() first.");
   }
 
   const client = new Anthropic();
   const response = await client.messages.create({
     model: MODEL,
-    max_tokens: 16000,
+    max_tokens: opts.maxTokens ?? 8000,
     system: opts.system,
     output_config: {
       format: { type: "json_schema", schema: opts.schema },

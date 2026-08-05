@@ -134,11 +134,13 @@ async function main(): Promise<void> {
   const out = writeReport([first, approved, second, abstain], stats);
   console.log(`\n${C.dim}Full evidence report written to ${out}${C.reset}`);
 
-  if (first.ruling.provenance.source === "replay") {
+  if (first.ruling.narration?.source !== "live") {
     console.log(
-      `\n${C.yellow}NOTE${C.reset} ${C.dim}Model reasoning above is a committed fixture, not a live API call.`,
+      `\n${C.yellow}NOTE${C.reset} ${C.dim}The rulings above were COMPUTED by the rule table (src/agent/rules.ts),`,
     );
-    console.log(`     Set ANTHROPIC_API_KEY to run canon's real model path. See SWAP-TO-LIVE.md.${C.reset}`);
+    console.log(`     which is the shipped decision path with or without a key. The prose wording is`);
+    console.log(`     generated from that same table; set ANTHROPIC_API_KEY to have a model write it up`);
+    console.log(`     instead. The decision does not change either way — that is the point.${C.reset}`);
   }
   console.log();
 }

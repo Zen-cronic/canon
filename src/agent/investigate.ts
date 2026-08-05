@@ -106,6 +106,12 @@ export async function gatherEvidence(
       serviceQueryCount,
       queries,
       siblingOf: entity.siblings?.[0],
+      // Kept as URNs, not just a count: the deprecation guard has to prove that
+      // nothing OUTSIDE the question depends on a candidate before canon will
+      // retire it, and a count cannot answer that.
+      downstreamUrns: down.nodes.map((n) => n.urn),
+      directDownstreamUrns: down.nodes.filter((n) => n.hop === 1).map((n) => n.urn),
+      upstreamUrns: up.nodes.map((n) => n.urn),
     });
   }
   return out;

@@ -37,7 +37,7 @@ function renderPage(runs: ResolveResult[], stats: { entities: number; platforms:
   const approved = runs.find((r) => r.write);
   const second = runs.find((r) => r.answeredBy === "graph");
   const abstain = runs.find((r) => r.ruling.outcome === "ABSTAIN");
-  const replayed = first?.ruling.provenance.source === "replay";
+  const narratedLive = first?.ruling.narration?.source === "live";
 
   return `<!doctype html>
 <html lang="en"><head>
@@ -52,7 +52,11 @@ function renderPage(runs: ResolveResult[], stats: { entities: number; platforms:
   <p class="meta">Run against a ${stats.entities}-entity catalog across ${stats.platforms} platforms.</p>
 </header>
 
-${replayed ? `<div class="banner"><strong>Fixture mode.</strong> DataHub responses come from a committed fixture catalog, and the model reasoning below is a committed fixture authored during development — <em>not</em> a captured live API call, and not measured output from a live DataHub. Set <code>ANTHROPIC_API_KEY</code> and point <code>DATAHUB_GMS_URL</code> at a quickstart to run both for real. See <code>SWAP-TO-LIVE.md</code>.</div>` : `<div class="banner ok"><strong>Live mode.</strong> Model reasoning below came from a real API call to ${esc(first?.ruling.provenance.model ?? "")}.</div>`}
+${
+    narratedLive
+      ? `<div class="banner ok"><strong>Rulings computed; prose written by ${esc(first?.ruling.narration?.model ?? "")}.</strong> Every ruling below was decided by the weighted rule table in <code>src/agent/rules.ts</code>. A model was then given that decision and asked to write it up — it cannot change a winner, a score or a severity.</div>`
+      : `<div class="banner"><strong>Rulings computed; prose from the same rule table.</strong> Every ruling below was decided by the weighted rule table in <code>src/agent/rules.ts</code> — no model is involved in the decision on any path. No <code>ANTHROPIC_API_KEY</code> is set, so the wording is generated from the rules too. Set one to have a model write the prose; the rulings will be identical.</div>`
+  }
 
 ${first ? renderBaselines(first) : ""}
 ${first ? renderTrace(first) : ""}
