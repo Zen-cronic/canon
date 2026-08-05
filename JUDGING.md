@@ -42,6 +42,7 @@ there is nothing to adjudicate.
 | Write-back lands | `node scripts/resolve.ts --subject "customer orders" --question "..." --force --approve` *(live)* | `add_structured_properties`, `save_document`, deprecation via the SDK |
 | The graph answers next time | re-run without `--force` *(live)* | `answered by: graph` |
 | Another agent benefits | `npm run ask-once` *(live)* | a stock MCP client, none of canon's code, finds the canonical table — [`examples/ask-once.txt`](examples/ask-once.txt) |
+| Another agent benefits, **measured** | `npm run downstream` | three stock strategies before/after the ruling: the impostor goes `#11 → not served` for the two that read governance metadata, and `#5 → #5` for the one that reads none |
 
 **On scoping.** canon deprecates exactly one asset, and the test is narrow
 ([`isTrulyDead`](src/agent/score.ts)). The operational source scores −41 and is
@@ -61,10 +62,10 @@ absence rather than the README asserting it.
 
 | Check | Command | Expect |
 |---|---|---|
-| Tests | `npm test` | 24 passing |
+| Tests | `npm test` | 32 passing |
 | Types | `npm run typecheck` | clean |
 | Zero-credential demo | `npm run demo` | full run + `out/index.html` in ~35s |
-| CI | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | typecheck, tests, the eval gate, and the demo, on every push |
+| CI | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | typecheck, tests, the eval gate, the downstream gate, and the demo, on every push |
 | End-to-end against real DataHub | [RUNNING-LIVE.md](RUNNING-LIVE.md) | 1905/1905 aspects ingested; ruling; write-back; graph-answered re-ask |
 
 **The decision path is deterministic.** No model call on any path, with or

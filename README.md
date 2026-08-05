@@ -39,11 +39,12 @@ rather not run anything.
 ```bash
 npm run poison        # break the winner on purpose; watch the ruling move
 npm run eval          # the ablation, and 24 scenarios nobody hand-wrote
-npm test              # 24 tests
+npm run downstream    # what the write-back did to a stock retrieval client
+npm test              # 32 tests
 npm run rules         # the 22 weighted rules, printed from the array that runs
 ```
 
-Those four are Node only. The dollar figure needs Python, because it is a real
+Those five are Node only. The dollar figure needs Python, because it is a real
 warehouse query rather than a constant:
 
 ```bash
@@ -201,6 +202,43 @@ xx snowflake:ANALYTICS.STAGING.STG_ORDERS
 It distinguishes what canon deprecated from what was already deprecated before
 it ran. Committed output: [`examples/ask-once.txt`](examples/ask-once.txt).
 
+### And the same thing, measured
+
+```bash
+npm run downstream
+```
+
+Three stock retrieval strategies, run over the same catalog before and after the
+ruling landed. [`src/eval/downstream.ts`](src/eval/downstream.ts) imports none of
+canon's rules, scorer or resolver — a test asserts that — and the right answer
+for each question is fixed in the file rather than read back from a ruling.
+
+| strategy | the right table | the impostor |
+|---|---|---|
+| **top-hit** — search rank only, reads no metadata | #7 → #7 | #5 → #5 |
+| **governance-aware** — suppresses deprecated, prefers owned + documented + certified. Knows nothing about canon | #1 → #1 | #11 → **not served** |
+| **canonical-marker** — the above, plus honouring an explicit canonical claim | #1 → #1 | #11 → **not served** |
+
+**Read the second column, and note what the first one does not say.** A
+governance-aware client already ranked the right table first on this catalog:
+`fct_orders` has a curated description, an owner and a `Certified` tag, and that
+was enough. The ruling did not have to fix that, and this table would be
+dishonest if it implied otherwise.
+
+What changed is the other half. Before the ruling, every one of these strategies
+would still hand you `ANALYTICS.STAGING.STG_ORDERS` — the table that actually
+produced the wrong board number — somewhere in the list. Afterwards the two
+strategies that read governance metadata do not offer it at all.
+
+And for a client that reads no metadata, **nothing canon writes can help it**:
+top-hit ranks the impostor at #5 and the correct table at #7, before and after.
+That row is in the table because leaving it out would be the easy lie.
+
+The second question in that run is a control: canon abstains on "daily revenue",
+writes no canonical claim, and all three strategies must come out byte-identical.
+CI asserts the improvement, the flat result and the control together, so none of
+them can drift.
+
 ## Evaluation
 
 **The ablation.** One question, one catalog, four strategies. Three of them are
@@ -271,6 +309,12 @@ registers and confirms the Cloud-only ones are absent. Committed output:
   one synthetic assertion carrying DataHub's own PASS/FAIL verdict, and labels
   it. Same winner, same ordering, smaller numbers (102 vs 52 live, 149 vs 75 on
   fixtures).
+- **On this catalog, governance metadata alone already ranks the winner
+  first.** The measured downstream benefit of the ruling is that the impostor
+  stops being served, not that the right table climbs — it was already at #1 for
+  any client reading descriptions, owners and tags. A catalog with sparser
+  governance signals would show a different shape, and this one is not evidence
+  about that catalog.
 - **The measure-semantics lexicon is small and explicit.** GROSS, NET, REFUND,
   TAX, SHIPPING, COUNT. An unrecognised measure contributes no marker rather
   than a guessed one, so the partition fails towards "duplicate" — abstaining is
@@ -300,6 +344,7 @@ src/datahub/mcp.ts       MCP client, with the connection-leak workaround
 src/datahub/live.ts      the live client: MCP + the OSS aspect API
 src/datahub/properties.ts  the canon.* names, in one place, pinned by tests
 src/eval/scenarios.ts    the generator — imports no rule and no weight
+src/eval/downstream.ts   the stock retrieval client — imports no canon code at all
 bridge/ingest_catalog.py loads the demo catalog as real aspects
 bridge/emit_aspects.py   deprecation + Incident via the Python SDK
 bridge/price_delta.py    the two warehouse queries

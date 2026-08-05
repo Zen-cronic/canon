@@ -117,3 +117,38 @@ it.
 | 24 | The button states what it did, honestly | **PASS** — "Applied to the fixture graph this page was rendered from" |
 
 Screenshot: `examples/screenshots/canon-05-fulcrum.png`.
+
+---
+
+## Fourth pass — the downstream measurement
+
+Added with `src/eval/downstream.ts`. The panel reports what canon's write-back
+did to a stock retrieval client, measured rather than asserted.
+
+| # | Flow | Result |
+|---|---|---|
+| 25 | Panel renders and is not hidden | **PASS** — 2 question blocks |
+| 26 | Ground truth is stated per question | **PASS** — the price_delta pair; "none" for the control |
+| 27 | The impostor column names the actual URN | **PASS** — `snowflake:ANALYTICS.STAGING.STG_ORDERS` |
+| 28 | A metadata-blind client is unchanged | **PASS** — top-hit: right table `#7 → #7`, impostor `#5 → #5` |
+| 29 | A governance-aware client stops serving the impostor | **PASS** — `#11 → not served`, both governance strategies |
+| 30 | The negative result is shown, not hidden | **PASS** — right table reads `#1 → #1`; the panel says so in prose |
+| 31 | The abstain control does not move | **PASS** — all three strategies "ordering identical" |
+| 32 | Adding the panel did not break the fulcrum click | **PASS** — 9 receipts, verification still reproduces the ruling |
+| 33 | The fixed rail does not obscure the new panel | **PASS** — `body` padding-bottom 64px clears the 35px rail |
+
+Screenshot: `examples/screenshots/canon-06-downstream.png` (`.playwright-mcp/` is
+gitignored, so the run output is copied where a judge can actually open it).
+
+### What flow 30 is doing there
+
+The first honest run of this measurement contradicted the hypothesis it was
+built to confirm. The expectation was that the write-back would move the correct
+table up the ranking. It did not — a governance-aware client already ranked it
+first, because the fixture gives `fct_orders` a curated description, an owner and
+a `Certified` tag, and that was enough.
+
+The measurement was changed to also track where the *impostor* ranks, which is
+where the effect actually is, and the panel now states the negative result in
+prose rather than reporting "no change" and moving on. Flow 30 asserts the
+negative result is still on the page, so it cannot quietly disappear later.
