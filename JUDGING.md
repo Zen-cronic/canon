@@ -79,7 +79,7 @@ connections and hangs permanently after ~6 URNs per process, and its
 canon's rules need. Both have reproducers with timings.
 
 **Two defects were found by driving the UI with Playwright and fixed**
-([`.playwright-mcp/E2E-RESULTS.md`](.playwright-mcp/E2E-RESULTS.md)): the fixture
+([`docs/E2E-RESULTS.md`](docs/E2E-RESULTS.md)): the fixture
 path still emitted fake `mcp:*` transport labels, and the `canon.*` property
 names disagreed between the writer and the reader. Both are now pinned by tests.
 
@@ -143,7 +143,7 @@ both.
 | Live setup, step by step | [RUNNING-LIVE.md](RUNNING-LIVE.md) |
 | Eval with its miss published | [`eval/README.md`](eval/README.md) |
 | Upstream problems, with reproducers | [`docs/UPSTREAM-NOTES.md`](docs/UPSTREAM-NOTES.md) |
-| E2E results | [`.playwright-mcp/E2E-RESULTS.md`](.playwright-mcp/E2E-RESULTS.md) |
+| E2E results | [`docs/E2E-RESULTS.md`](docs/E2E-RESULTS.md) |
 | Honest limits | [README.md](README.md#honest-limits) |
 
 The report is built to be read with the sound off: every beat leaves a changed
