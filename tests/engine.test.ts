@@ -14,6 +14,7 @@ import { resolve } from "../src/agent/resolve.ts";
 import { triageStructurally } from "../src/agent/triage.ts";
 import { partitionByDefinition, fingerprint } from "../src/agent/cohort.ts";
 import { isTrulyDead } from "../src/agent/score.ts";
+import { CANON_PROPERTIES } from "../src/datahub/properties.ts";
 
 const ORDERS_DBT = "urn:li:dataset:(urn:li:dataPlatform:dbt,analytics.marts.fct_orders,PROD)";
 const ORDERS_SF = "urn:li:dataset:(urn:li:dataPlatform:snowflake,ANALYTICS.MARTS.FCT_ORDERS,PROD)";
@@ -193,3 +194,24 @@ test("PARTITION: a candidate with no readable schema is set aside, not ruled on"
 function urn(d: { urn: string }): string {
   return d.urn;
 }
+
+test("CONTRACT: the Python ingest defines exactly the canon.* properties the writer uses", () => {
+  // These two lists must agree or the write-back half-lands: values get set on
+  // properties DataHub has never heard of, and the read-back cannot tell that
+  // apart from "nothing was superseded". They disagreed once, which is why this
+  // test exists.
+  const py = readFileSync("bridge/ingest_catalog.py", "utf8");
+  const defined = [...py.matchAll(/^\s*"(canon\.[a-z_]+)",/gm)].map((m) => m[1]).sort();
+  const used = CANON_PROPERTIES.map((p) => p.replace("urn:li:structuredProperty:", "")).sort();
+  assert.deepEqual(defined, used, "bridge/ingest_catalog.py and src/datahub/properties.ts disagree");
+});
+
+test("CONTRACT: no source file declares a canon.* property name of its own", () => {
+  // properties.ts is the only place these strings may be written. Anything else
+  // is a second source of truth waiting to drift.
+  const offenders: string[] = [];
+  for (const file of ["src/datahub/mock.ts", "src/datahub/live.ts", "src/agent/writeback.ts"]) {
+    if (/["']urn:li:structuredProperty:canon\./.test(readFileSync(file, "utf8"))) offenders.push(file);
+  }
+  assert.deepEqual(offenders, [], "these files hard-code a canon.* URN instead of importing it");
+});

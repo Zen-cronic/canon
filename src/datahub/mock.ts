@@ -8,6 +8,7 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { CANON_DECIDED_AT_PROP, CANON_RATIONALE_PROP, CANON_STATUS_PROP, CANON_SUBJECT_PROP, CANON_SUPERSEDED_BY_PROP } from "./properties.ts";
 import type { DataHubClient, PersistedRuling } from "./client.ts";
 import type {
   ContextDocument,
@@ -23,11 +24,14 @@ import type {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_FIXTURE = join(HERE, "..", "..", "fixtures", "catalog.json");
 
-export const CANON_STATUS_PROP = "urn:li:structuredProperty:canon.status";
-export const CANON_SUBJECT_PROP = "urn:li:structuredProperty:canon.subject";
-export const CANON_SUPERSEDED_BY_PROP = "urn:li:structuredProperty:canon.supersededBy";
-export const CANON_DECIDED_AT_PROP = "urn:li:structuredProperty:canon.decidedAt";
-export const CANON_RATIONALE_PROP = "urn:li:structuredProperty:canon.rationale";
+// Property names live in one place — see properties.ts for why.
+export {
+  CANON_STATUS_PROP,
+  CANON_SUBJECT_PROP,
+  CANON_SUPERSEDED_BY_PROP,
+  CANON_DECIDED_AT_PROP,
+  CANON_RATIONALE_PROP,
+} from "./properties.ts";
 
 type CatalogFile = {
   generatedAt: number;
@@ -220,10 +224,10 @@ export class MockDataHubClient implements DataHubClient {
     if (m.kind === "upsertDocument") {
       const urn = `urn:li:document:canon-${this.documents.length + 1}`;
       this.documents.push({ ...m.document, urn });
-      return { ...base, applied: true, via: "mcp:upsert_document" };
+      return { ...base, applied: true, via: "fixture:document (live -> mcp:save_document)" };
     }
     if (m.kind === "createProposal") {
-      return { ...base, applied: true, via: "mcp:create_proposal" };
+      return { ...base, applied: true, via: "fixture:incident (live -> python-sdk:incidentInfo)" };
     }
 
     const entity = this.byUrn.get(m.entity);
@@ -237,19 +241,19 @@ export class MockDataHubClient implements DataHubClient {
         const existing = props.find((p) => p.propertyUrn === m.propertyUrn);
         if (existing) existing.values = m.values;
         else props.push({ propertyUrn: m.propertyUrn, values: m.values });
-        return { ...base, applied: true, via: "mcp:set_structured_property" };
+        return { ...base, applied: true, via: "fixture:structuredProperty (live -> mcp:add_structured_properties)" };
       }
       case "setDeprecation": {
         entity.deprecation = { deprecated: m.deprecated, note: m.note, actor: "urn:li:corpuser:canon" };
-        return { ...base, applied: true, via: "mcp:update_deprecation" };
+        return { ...base, applied: true, via: "fixture:deprecation (live -> python-sdk:deprecation)" };
       }
       case "addGlossaryTerm": {
         if (!entity.glossaryTerms.includes(m.term)) entity.glossaryTerms.push(m.term);
-        return { ...base, applied: true, via: "mcp:add_glossary_terms" };
+        return { ...base, applied: true, via: "fixture:glossaryTerm (live -> mcp:add_terms)" };
       }
       case "addTag": {
         if (!entity.tags.includes(m.tag)) entity.tags.push(m.tag);
-        return { ...base, applied: true, via: "mcp:add_tags" };
+        return { ...base, applied: true, via: "fixture:tag (live -> mcp:add_tags)" };
       }
     }
   }

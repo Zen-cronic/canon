@@ -18,7 +18,7 @@ import {
   CANON_STATUS_PROP,
   CANON_SUBJECT_PROP,
   CANON_SUPERSEDED_BY_PROP,
-} from "../datahub/mock.ts";
+} from "../datahub/properties.ts";
 import type { ContextDocument, Mutation, MutationReceipt } from "../datahub/types.ts";
 import type { CandidateEvidence, Ruling } from "./types.ts";
 

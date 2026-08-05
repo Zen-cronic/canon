@@ -52,11 +52,13 @@ import type {
   Urn,
 } from "./types.ts";
 
-export const CANON_STATUS_PROP = "urn:li:structuredProperty:canon.status";
-export const CANON_SUBJECT_PROP = "urn:li:structuredProperty:canon.subject";
-export const CANON_DECIDED_AT_PROP = "urn:li:structuredProperty:canon.decided_at";
-export const CANON_RATIONALE_PROP = "urn:li:structuredProperty:canon.rationale";
-export const CANON_SUPERSEDED_BY_PROP = "urn:li:structuredProperty:canon.superseded_by";
+import {
+  CANON_DECIDED_AT_PROP,
+  CANON_RATIONALE_PROP,
+  CANON_STATUS_PROP,
+  CANON_SUBJECT_PROP,
+  CANON_SUPERSEDED_BY_PROP,
+} from "./properties.ts";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Json = Record<string, any>;

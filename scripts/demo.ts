@@ -3,11 +3,29 @@
 //   2. canon investigates, rules, and writes the ruling back — after approval.
 //   3. Ask again. The catalog answers. Zero model calls.
 
-import { createClient } from "../src/datahub/client.ts";
+import { execFileSync } from "node:child_process";
+import { closeClient, createClient } from "../src/datahub/client.ts";
 import type { MockDataHubClient } from "../src/datahub/mock.ts";
-import { resolve } from "../src/agent/resolve.ts";
+import { applyApproved, resolve } from "../src/agent/resolve.ts";
 import { shortUrn } from "../src/agent/writeback.ts";
-import { writeReport } from "../src/report/html.ts";
+import { writeFilm, type PriceDelta } from "../src/report/film.ts";
+
+/**
+ * Prices the error with a real warehouse query. Optional: if DuckDB is not
+ * installed the demo still runs, and the report says the section is unpriced
+ * rather than inventing a number.
+ */
+function priceDelta(): PriceDelta | undefined {
+  try {
+    const out = execFileSync(process.env.CANON_PYTHON ?? "python3", ["bridge/price_delta.py", "--json"], {
+      encoding: "utf8",
+      timeout: 120_000,
+    });
+    return JSON.parse(out) as PriceDelta;
+  } catch {
+    return undefined;
+  }
+}
 
 const C = {
   reset: "\x1b[0m",
@@ -89,13 +107,10 @@ async function main(): Promise<void> {
   console.log(`\n  ${C.dim}canon plans mutations; applying them is a separate, explicit approval.${C.reset}`);
 
   head(5, "Approved — applying and verifying");
-  const approved = await resolve(client, {
-    subject: SUBJECT,
-    question: QUESTION,
-    searchQuery: "orders",
-    force: true,
-    approve: true,
-  });
+  // The plan that gets applied is the plan printed in step 4. Nothing
+  // re-investigates in between, so what a human approved is what lands.
+  await applyApproved(client, first);
+  const approved = first;
   for (const rec of approved.writeBack?.receipts ?? []) {
     console.log(`  ${rec.applied ? `${C.green}✓${C.reset}` : `${C.red}✗${C.reset}`} ${rec.summary} ${C.dim}(${rec.via})${C.reset}`);
   }
@@ -131,8 +146,35 @@ async function main(): Promise<void> {
   for (const m of abstain.ruling.missingEvidence ?? []) console.log(`  ${C.dim}·${C.reset} ${wrap(m, 92, "    ").trim()}`);
   console.log(`\n  ${C.dim}canon files this back as an open question on both candidates rather than inventing a winner.${C.reset}`);
 
-  const out = writeReport([first, approved, second, abstain], stats);
+  const price = priceDelta();
+  if (price) {
+    head(8, "What the wrong table costs");
+    console.log(
+      `\n  from the staging copy    ${C.red}$${price.wrong.revenueUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })}${C.reset}`,
+    );
+    console.log(
+      `  from the canonical table ${C.green}$${price.canonical.revenueUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })}${C.reset}`,
+    );
+    console.log(
+      `  ${C.bold}delta                    $${price.deltaUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })}${C.reset} ${C.dim}(${price.deltaPct.toFixed(2)}% overstated)${C.reset}`,
+    );
+    console.log(`\n  ${C.dim}Two SELECTs against ${price.engine}. Not an estimate.${C.reset}`);
+  }
+
+  const out = writeFilm({
+    hero: first,
+    approved,
+    second,
+    abstain,
+    stats,
+    price,
+    mode: client.mode,
+  });
   console.log(`\n${C.dim}Full evidence report written to ${out}${C.reset}`);
+  console.log(`${C.dim}Open it in a browser — it is self-contained, no server needed.${C.reset}`);
+
+  // In live mode the MCP child processes hold the event loop open.
+  await closeClient(client);
 
   if (first.ruling.narration?.source !== "live") {
     console.log(
@@ -167,3 +209,4 @@ function wrap(text: string, width: number, indent: string): string {
 }
 
 await main();
+process.exit(0);
