@@ -5,12 +5,15 @@
 *.pem
 *.key
 
-# Agent / tooling state
-.claude/settings.local.json
+# Agent / tooling state and internal strategy notes — never published
+.claude/
+.codex/
 .playwright-mcp/
 test-results/
 playwright-report/
 docs/overnight/
+docs/DESIGN-BRIEF.md
+OVERNIGHT.md
 
 # Python
 __pycache__/
