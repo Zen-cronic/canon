@@ -9,9 +9,26 @@ Environment for everything below:
 ```
 DataHub OSS          v1.7.0 (datahub docker quickstart)
 mcp-server-datahub   3.4.5 (uvx --from mcp-server-datahub mcp-server-datahub)
-acryl-datahub CLI    1.7.0
+acryl-datahub CLI    1.7.0   — the quickstart was launched with this
+acryl-datahub SDK    1.6.0.17 — what bridge/ingest_catalog.py actually emitted with
 host                 Linux, 16 CPU / 58 GB, Docker 29.7.1
 ```
+
+**On that version split, because it is the kind of detail that invalidates a
+reproduction.** The CLI and the SDK came from two different places during this
+run: the CLI from a `uv tool` install, the SDK from the repo's pinned pyenv
+environment, which was still on 1.6.0.17. DataHub records the emitting client in
+`systemMetadata.properties.clientVersion`, so the ingested aspects carry
+`1.6.0.17` and the discrepancy is visible in the catalog itself.
+
+`pyproject.toml` now floors both at `>=1.7.0` and the pinned environment supplies
+the CLI and the SDK together, so this cannot recur. **The 1905/1905 ingest figure
+below was measured with the SDK at 1.6.0.17 and has not yet been re-measured at
+1.7.0** — re-running it is the first thing to do when the quickstart is next up.
+
+Findings 1 and 2 are unaffected by that split either way: both are properties of
+`mcp-server-datahub` 3.4.5, which is installed separately through `uvx` and does
+not depend on the `acryl-datahub` version in this repo.
 
 ---
 

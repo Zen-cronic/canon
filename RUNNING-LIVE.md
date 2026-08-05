@@ -10,12 +10,42 @@ Everything here was executed on 2026-08-05 against DataHub OSS v1.7.0 and
 
 ---
 
+## 0. Activate the Python environment
+
+Everything on the Python side — the `datahub` CLI, the SDK the bridge scripts
+import, and DuckDB — comes from one pyenv environment pinned in
+`.python-version`. Activate it explicitly:
+
+```bash
+pyenv shell .datahub-hack
+poetry install                     # first time only
+```
+
+Check you have all three:
+
+```bash
+datahub --version                                   # acryl-datahub, version 1.7.0
+python3 -c "import datahub, duckdb; print('ok')"    # ok
+```
+
+**Two ways to get this wrong, both silent:**
+
+- A `pyenv shell <other-env>` set earlier in the same terminal **overrides**
+  `.python-version`, so `cd`-ing into this repo will not pick the right
+  interpreter and every bridge script fails on `import datahub`. Run
+  `pyenv shell --unset` (or `pyenv shell .datahub-hack`) if in doubt —
+  `pyenv version` tells you what is actually selected and why.
+- In a **non-interactive** shell (CI, `bash -c`, an agent) `pyenv shell` does not
+  exist — it is a shell function. Use `export PYENV_VERSION=.datahub-hack`, which
+  is what it sets, or point `CANON_PYTHON` at the interpreter directly:
+  `export CANON_PYTHON=~/.pyenv/versions/.datahub-hack/bin/python3`. Both
+  `src/datahub/live.ts` and `scripts/demo.ts` honour `CANON_PYTHON`.
+
 ## 1. Start DataHub OSS
 
 Needs Docker, 2 CPU and 8 GB of RAM.
 
 ```bash
-pip install acryl-datahub          # or: uv tool install acryl-datahub
 export DATAHUB_TELEMETRY_ENABLED=false
 export DATAHUB_MAPPED_GMS_PORT=8081   # only if something already holds 8080
 datahub docker quickstart
@@ -42,11 +72,17 @@ types), `siblings`, `datasetProfile`, `datasetUsageStatistics`, `operation`,
 property definitions.
 
 ```bash
-python bridge/ingest_catalog.py --gms http://localhost:8081
+python3 bridge/ingest_catalog.py --gms http://localhost:8081
+# clock:     rebased to now (+3.0 days)
 # entities:  257
 # aspects:   1905 metadata change proposals
 # done:      1905/1905 aspects emitted in 65s
 ```
+
+That run was measured with the SDK at 1.6.0.17, before `pyproject.toml` was
+floored at 1.7.0; see [`docs/UPSTREAM-NOTES.md`](docs/UPSTREAM-NOTES.md). DataHub
+records the emitting client in `systemMetadata.properties.clientVersion` if you
+want to confirm which version wrote what.
 
 Give the search and graph indices a minute to catch up before the next step;
 DataHub ingests through Kafka and the index lags the write.

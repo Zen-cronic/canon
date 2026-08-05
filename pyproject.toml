@@ -1,12 +1,20 @@
 [project]
 name = "datahub-hack"
 version = "0.1.0"
-description = "Build with DataHub: The Agent Hackathon — workspace"
+description = "canon — Build with DataHub: The Agent Hackathon"
 requires-python = ">=3.14,<3.15"
 dependencies = [
-    "acryl-datahub>=1.6.0.17",
+    # Provides BOTH the `datahub` CLI (docker quickstart) and the SDK the bridge
+    # scripts import. Floored at the version this project was verified against —
+    # the ingest emits ~1905 aspects through it, and DataHub records the emitting
+    # client version in systemMetadata, so a mismatch is visible in the catalog.
+    "acryl-datahub>=1.7.0",
     # floor forces a pydantic-core with cp314 wheels; older 2.33.x sdist has no 3.14 wheel
     "pydantic>=2.13.4",
+    # bridge/price_delta.py builds the warehouse the dollar figure is computed
+    # from. The README publishes that number, so it is a runtime dependency of a
+    # published claim, not a convenience.
+    "duckdb>=1.5.5",
 ]
 
 [tool.poetry]

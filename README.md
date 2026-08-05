@@ -39,9 +39,21 @@ rather not run anything.
 ```bash
 npm run poison        # break the winner on purpose; watch the ruling move
 npm run eval          # the ablation, and 24 scenarios nobody hand-wrote
-npm run price         # the two warehouse queries behind the numbers above
 npm test              # 24 tests
+npm run rules         # the 22 weighted rules, printed from the array that runs
 ```
+
+Those four are Node only. The dollar figure needs Python, because it is a real
+warehouse query rather than a constant:
+
+```bash
+pyenv shell .datahub-hack && poetry install    # once
+npm run price                                  # the two SELECTs behind the numbers above
+```
+
+`npm run demo` calls it too, and degrades gracefully — with no Python
+environment the report renders without the pricing section rather than
+substituting a number.
 
 Against a live DataHub OSS quickstart, see [RUNNING-LIVE.md](RUNNING-LIVE.md).
 

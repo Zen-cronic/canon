@@ -40,19 +40,50 @@ jobs:
         run: npm run demo
 
   python:
-    name: write-bridge imports
+    name: bridge + the published dollar figure
     runs-on: ubuntu-latest
+    env:
+      DATAHUB_TELEMETRY_ENABLED: "false"
     steps:
       - uses: actions/checkout@v4
 
+      # Matches requires-python in pyproject.toml. This job used to run 3.11,
+      # which the manifest does not allow — so it was testing an environment
+      # nobody runs.
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.14"
 
-      - name: Install the DataHub SDK bridge
-        run: pip install "acryl-datahub>=1.7.0"
+      # Install what the manifest declares, rather than an ad-hoc pin that can
+      # drift away from it. This is what caught the CLI/SDK version split.
+      - name: Install the declared dependencies
+        run: pip install .
 
-      - name: Write bridge imports and its CLI contract holds
-        env:
-          DATAHUB_TELEMETRY_ENABLED: "false"
-        run: python bridge/emit_aspects.py --help
+      - name: The DataHub SDK the bridge imports is the one pinned
+        run: |
+          python -c "import importlib.metadata as m; v=m.version('acryl-datahub'); print(v); assert v >= '1.7.0', v"
+
+      - name: Both write bridges import and hold their CLI contract
+        run: |
+          python bridge/emit_aspects.py --help > /dev/null
+          python bridge/ingest_catalog.py --dry-run
+
+      # The README publishes $7,951,811.55 / $7,121,844.95 / $829,966.60. Those
+      # come out of a seeded DuckDB warehouse, so CI recomputes them: if the
+      # seed, the schema or the query ever changes, the build fails rather than
+      # the README quietly becoming wrong.
+      - name: The published dollar figure still reproduces
+        run: |
+          python bridge/price_delta.py --json > /tmp/price.json
+          python - <<'PY'
+          import json
+          p = json.load(open("/tmp/price.json"))
+          expected = {"wrong": 7951811.55, "canonical": 7121844.95, "delta": 829966.60}
+          got = {
+              "wrong": p["wrong"]["revenueUsd"],
+              "canonical": p["canonical"]["revenueUsd"],
+              "delta": p["deltaUsd"],
+          }
+          assert got == expected, f"README publishes {expected}, price_delta.py now returns {got}"
+          print("dollar figure reproduces:", got)
+          PY
