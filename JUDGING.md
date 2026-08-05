@@ -39,6 +39,7 @@ there is nothing to adjudicate.
 | Check | Command | Expect |
 |---|---|---|
 | The rule table, as data | `npm run rules` | 22 rules, each with the aspect it reads |
+| The whole catalog, not one question | `npm run coverage` | 55 contested subjects: 14 ruled, 1 referred to owners, 40 refused with the missing metadata named |
 | Reads and writes over MCP *(live)* | `npm run mcp:probe` | 20 tools; the 8 Cloud-only ones confirmed **absent** — [`examples/mcp-tools.txt`](examples/mcp-tools.txt) |
 | Write-back lands | `node scripts/resolve.ts --subject "customer orders" --question "..." --force --approve` *(live)* | `add_structured_properties`, `save_document`, deprecation via the SDK |
 | The graph answers next time | re-run without `--force` *(live)* | `answered by: graph` |
@@ -63,7 +64,7 @@ absence rather than the README asserting it.
 
 | Check | Command | Expect |
 |---|---|---|
-| Tests | `npm test` | 39 passing |
+| Tests | `npm test` | 47 passing |
 | Types | `npm run typecheck` | clean |
 | Zero-credential demo | `npm run demo` | full run + `out/index.html` in ~35s |
 | CI | [`.github/workflows/ci.yml`](.github/workflows/ci.yml) | typecheck, tests, the eval gate, the downstream gate, and the demo, on every push |

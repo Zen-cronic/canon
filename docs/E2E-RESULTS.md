@@ -166,6 +166,36 @@ The lower rungs of the ladder are not exercised by the demo catalog, which uses
 synthetic catalogs, along with the guarantee that matters most here: **canon
 never plans a mutation that writes a tier.**
 
+---
+
+## Sixth pass — the contested-subject posture
+
+The scale answer: every concept in the catalog that more than one asset answers
+to, put through the same adjudicator.
+
+| # | Flow | Result |
+|---|---|---|
+| 39 | Panel renders with the four counts | **PASS** — 55 contested, 14 ruled, 1 referred, 40 needing evidence |
+| 40 | The buckets are exhaustive | **PASS** — 14 + 1 + 40 = 55, asserted in the DOM, not just in the summariser |
+| 41 | The backlog is rendered in priority order | **PASS** — 41 owner, 40 tier, 40 assertions |
+| 42 | The cost line reports real totals | **PASS** — "0 model calls, 905 graph reads and 50ms — about 16.5 reads per subject" |
+| 43 | The report agrees with the standalone sweep | **PASS** — `npm run coverage` gives the same 55 / 14 / 1 / 40 |
+
+Screenshot: `examples/screenshots/canon-07-posture.png`.
+
+### One defect this pass found
+
+The posture initially ran *after* the hero write-back had been applied, so the
+report was describing a catalog canon had already modified — with
+`STG_ORDERS` freshly deprecated — while `npm run coverage` described the catalog
+as it ships. The two agreed on this run by luck: the extra deprecation made the
+`order` subject resolve harder, and it was already resolving.
+
+Fixed by hoisting the sweep in `scripts/demo.ts` to before the first
+`resolve()`, next to the downstream baseline, which has the same requirement for
+the same reason. Both numbers now come from the shipped catalog and cannot drift
+apart.
+
 ### What flow 30 is doing there
 
 The first honest run of this measurement contradicted the hypothesis it was

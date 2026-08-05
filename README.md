@@ -40,11 +40,12 @@ rather not run anything.
 npm run poison        # break the winner on purpose; watch the ruling move
 npm run eval          # the ablation, and 24 scenarios nobody hand-wrote
 npm run downstream    # what the write-back did to a stock retrieval client
-npm test              # 39 tests
+npm run coverage      # all 55 contested subjects in the catalog, not just the good one
+npm test              # 47 tests
 npm run rules         # the 22 weighted rules, printed from the array that runs
 ```
 
-Those five are Node only. The dollar figure needs Python, because it is a real
+Those six are Node only. The dollar figure needs Python, because it is a real
 warehouse query rather than a constant:
 
 ```bash
@@ -289,6 +290,53 @@ exact counts — a threshold would let the numbers drift under a green build.
 Other draws: seed 99 n=40 → 40/40; seed 7 n=40 → 40/40. The reference seed is
 the one *with* the miss.
 
+## Every contested question in the catalog, not just the good one
+
+```bash
+npm run coverage
+```
+
+One hand-picked question is what you would show if it were the only one that
+worked. So this runs the same adjudicator over **every** concept in the catalog
+that more than one asset answers to — discovered structurally from names, by
+code that never looks at a score
+([`src/eval/coverage.ts`](src/eval/coverage.ts)) — and writes nothing back.
+
+```
+257 entities · 55 contested subjects
+
+  14  ruled                  the catalog carried enough to decide
+   1  referred to owners     two definitions share a word; a person has to settle it
+  40  needs more evidence    canon declines to guess
+```
+
+**14 of 55 is the honest number, and the 40 is the point.** Most of this
+catalog's clusters are a raw table, a staging copy, an intermediate model and a
+mart with no owners, no assertions and no tier between them. There is nothing in
+the graph that separates them, so an adjudicator that returned a winner would be
+inventing one. Refusing 40 times is the same discipline the un-stacked eval
+measures, applied to the whole catalog instead of to generated scenarios.
+
+And the refusals are not a dead end, because each one names what would settle
+it. Counted across all 55 subjects, that is a work list in priority order:
+
+```
+ 41  subjects blocked on   a named owner
+ 40  subjects blocked on   a trust tier
+ 40  subjects blocked on   data-quality assertions on the candidates
+```
+
+That is the output a platform team can act on: not "your catalog is 63%
+healthy", but "these three gaps are what stop 40 questions from having an
+answer." Fill them and canon rules on more of them — which is the same loop
+tiering already asks teams to run, pointed at the assets where it changes a
+decision.
+
+**"Contested" is deliberately narrow.** It means more than one asset answers to
+the same concept, so somebody has to choose. It does not mean undocumented,
+untagged or unhealthy. Catalog health dashboards are a thing DataHub already
+ships, and this is not one.
+
 ## How it uses DataHub
 
 Reads and OSS-legal writes go over the MCP server. Two writes have no OSS MCP
@@ -362,6 +410,7 @@ src/datahub/live.ts      the live client: MCP + the OSS aspect API
 src/datahub/properties.ts  the canon.* names, in one place, pinned by tests
 src/eval/scenarios.ts    the generator — imports no rule and no weight
 src/eval/downstream.ts   the stock retrieval client — imports no canon code at all
+src/eval/coverage.ts     contested-subject discovery — reads names, never scores
 bridge/ingest_catalog.py loads the demo catalog as real aspects
 bridge/emit_aspects.py   deprecation + Incident via the Python SDK
 bridge/price_delta.py    the two warehouse queries
