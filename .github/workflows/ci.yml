@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  # Upstream mcp-server-datahub #152 blocks every call ~54s unless this is off.
+  DATAHUB_TELEMETRY_ENABLED: "false"
+
+jobs:
+  node:
+    name: typecheck + tests + eval
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+          cache: npm
+
+      - run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: npm test
+
+      # The un-stacked eval is a published claim in the README, so CI recomputes
+      # it on every push. If the numbers move, the build fails and the README is
+      # wrong until someone updates it.
+      - name: Un-stacked eval (gate — README numbers must reproduce)
+        run: npm run eval:ci
+
+      - name: Demo runs end to end with no credentials
+        run: npm run demo
+
+  python:
+    name: write-bridge imports
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install the DataHub SDK bridge
+        run: pip install "acryl-datahub>=1.7.0"
+
+      - name: Bridge is syntactically valid and its CLI contract holds
+        env:
+          DATAHUB_TELEMETRY_ENABLED: "false"
+        run: python bridge/emit_deprecation.py --help
