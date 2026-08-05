@@ -65,6 +65,11 @@ export class MockDataHubClient implements DataHubClient {
     return new MockDataHubClient(JSON.parse(raw) as CatalogFile);
   }
 
+  /** For the eval, which builds catalogs in memory rather than on disk. */
+  static fromCatalog(catalog: CatalogFile): MockDataHubClient {
+    return new MockDataHubClient(catalog);
+  }
+
   /** The catalog's own frozen clock. Every freshness claim is relative to this. */
   now(): number {
     return this.catalog.generatedAt;

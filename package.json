@@ -16,7 +16,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
     "ci": "npm run typecheck && npm test",
-    "mcp:probe": "node scripts/mcp-probe.ts"
+    "mcp:probe": "node scripts/mcp-probe.ts",
+    "eval:ci": "node scripts/eval.ts --ci"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
