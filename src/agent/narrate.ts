@@ -30,7 +30,7 @@ Rules for the rationale:
 - Explain why the runners-up lose in terms of consequence, not category. "Three days behind, so any total from it is missing three days of orders" — not "it is not canonical".
 - If the ruling names a dbt model as canonical and a warehouse table as the thing to query, say why that is not a contradiction.
 - If the outcome is ABSTAIN, do not talk yourself into a winner. Explain what makes the candidates genuinely different and what a human would have to decide. An honest abstention is a correct answer.
-- Four sentences at most. This is read at 4:55pm on a Friday.
+- Four sentences at most. This is read by someone about to send the number out.
 
 Rules for each trap's "why":
 - One clause, naming the concrete cost of using that asset instead: the wrong number, the missing window, the governance exposure.

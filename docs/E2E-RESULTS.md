@@ -60,7 +60,7 @@ truth, plus two tests that keep it that way:
 
 | File | What it shows |
 |---|---|
-| `examples/screenshots/canon-01-hero.png` | Cold open: Friday 4:55 PM, $7,951,811.55 struck through → $7,121,844.95, the $829,966.60 delta |
+| `examples/screenshots/canon-01-hero.png` | Cold open: two dashboards disagree — $7,951,811.55 struck through → $7,121,844.95, the $829,966.60 delta |
 | `examples/screenshots/canon-02-adjudication.png` | Scored candidates with every rule that fired, winner ignited, rail naming the URN and aspects |
 | `examples/screenshots/canon-03-abstain.png` | The refusal: two definitions, their columns, and the `COMPETING_DEFINITIONS` verdict |
 

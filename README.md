@@ -1,6 +1,7 @@
 # canon
 
-**It's Friday, 4:55 PM. Can I send this number to the board?**
+**Two dashboards, two revenue numbers, and the board deck goes out in the morning.
+Which one can I send?**
 
 Five tables in this catalog answer to `orders`. The number in the deck came from
 one of them. canon works out which one is actually canonical — from lineage,
