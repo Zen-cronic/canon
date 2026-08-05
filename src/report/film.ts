@@ -21,6 +21,7 @@ import type { ResolveResult } from "../agent/resolve.ts";
 import { shortUrn } from "../agent/writeback.ts";
 import { THRESHOLDS } from "../agent/rules.ts";
 import type { DownstreamDelta } from "../eval/downstream.ts";
+import type { Posture } from "../eval/coverage.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = join(HERE, "..", "..", "out");
@@ -49,6 +50,8 @@ export type FilmData = {
   serverInfo?: string | undefined;
   /** Before/after retrieval measurement. Absent if the demo skipped it. */
   downstream?: DownstreamDelta[] | undefined;
+  /** Every contested subject in the catalog, and what canon did with each. */
+  posture?: Posture | undefined;
 };
 
 const usd = (n: number): string =>
@@ -154,6 +157,7 @@ function payload(data: FilmData): string {
         };
       }),
     })),
+    posture: data.posture ?? null,
     stats: data.stats,
     mode: data.mode,
     thresholds: THRESHOLDS,
@@ -294,6 +298,19 @@ ${esc(price.canonical.query)}
     <p class="verify" id="verify"></p>
     <p class="ask-twice" id="ask-twice"></p>
   </div>
+</section>
+
+<section class="panel" id="panel-posture">
+  <h2>The same engine, over every contested question in the catalog</h2>
+  <p class="lede">One hand-picked question is what you would show if it were the only one that
+  worked. So: every concept in this catalog that more than one asset answers to, put through the
+  same adjudicator, read-only. <strong>Contested</strong> means exactly that — not "unhealthy".
+  Catalog health dashboards are a thing DataHub already ships.</p>
+  <div class="posture" id="posture"></div>
+  <p class="lede">The refusals are the interesting column. canon abstains when the catalog does not
+  carry enough to separate the candidates, and each abstention names what would settle it — so the
+  refusals are a prioritised metadata backlog rather than a list of failures.</p>
+  <ul class="backlog" id="backlog"></ul>
 </section>
 
 <section class="panel" id="panel-downstream">
@@ -452,6 +469,22 @@ code { font-family: var(--mono); font-size: 0.92em; }
 .verdict-mech { font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
 .verdict-text { margin: 10px 0 0; }
 
+.posture { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px; margin: 20px 0 4px; }
+.p-cell { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 2px; }
+.p-n { font-size: 30px; font-weight: 600; font-family: var(--mono); line-height: 1.1; }
+.p-k { font-size: 13px; }
+.p-sub { font-size: 12px; color: var(--dim); }
+.p-win .p-n { color: var(--win); }
+.p-warn .p-n { color: #e0b341; }
+.p-info .p-n { color: #6aa9d8; }
+.backlog { list-style: none; padding: 0; margin: 12px 0 0; }
+.backlog li { display: flex; gap: 12px; align-items: baseline; padding: 7px 0;
+  border-top: 1px solid var(--line); font-size: 13.5px; }
+.bl-n { font-family: var(--mono); font-weight: 600; min-width: 3ch; text-align: right; }
+.bl-need { color: var(--dim); }
+.p-cost { margin-top: 18px; }
 .ds-block { margin: 22px 0 6px; }
 .ds-q { font-size: 15px; font-weight: 600; }
 .ds-gt { color: var(--dim); font-size: 13px; margin-top: 2px; }
@@ -834,6 +867,43 @@ const JS = `
       (b.correct ? "CORRECT" : "WRONG") + "</td>";
     bt.appendChild(tr);
   });
+
+  // Contested-subject posture across the whole catalog.
+  var posturePanel = document.getElementById("panel-posture");
+  if (!D.posture) {
+    if (posturePanel) posturePanel.hidden = true;
+  } else {
+    var P = D.posture;
+    var cells = [
+      { n: P.contested, k: "contested subjects", sub: "concepts more than one asset answers to", cls: "" },
+      { n: P.ruled, k: "ruled", sub: "the catalog carried enough to decide", cls: "p-win" },
+      { n: P.referredToOwners, k: "referred to owners", sub: "two definitions share a word", cls: "p-warn" },
+      { n: P.needsMoreEvidence, k: "needs more evidence", sub: "canon declines to guess", cls: "p-info" }
+    ];
+    document.getElementById("posture").innerHTML = cells.map(function (c) {
+      return '<div class="p-cell ' + c.cls + '"><span class="p-n">' + c.n + "</span>" +
+        '<span class="p-k">' + c.k + "</span>" +
+        '<span class="p-sub">' + c.sub + "</span></div>";
+    }).join("");
+
+    var bl = document.getElementById("backlog");
+    P.backlog.slice(0, 5).forEach(function (b) {
+      var li = document.createElement("li");
+      li.innerHTML = '<span class="bl-n">' + b.blocks + "</span>" +
+        '<span class="bl-need">subjects blocked on ' + b.need + "</span>";
+      bl.appendChild(li);
+    });
+
+    var cost = document.createElement("p");
+    cost.className = "lede p-cost";
+    cost.innerHTML =
+      "All " + P.contested + " subjects cost <strong>" + P.totals.modelCalls +
+      " model calls</strong>, " + P.totals.graphReads + " graph reads and " + P.totals.ms +
+      "ms — about " + (P.totals.graphReads / P.contested).toFixed(1) +
+      " reads per subject. The decision layer is a rule table, so re-running the whole catalog " +
+      "nightly costs graph reads and nothing else.";
+    posturePanel.appendChild(cost);
+  }
 
   // Downstream retrieval, before and after the write-back.
   var dsRoot = document.getElementById("downstream");

@@ -10,6 +10,7 @@ import { applyApproved, resolve } from "../src/agent/resolve.ts";
 import { shortUrn } from "../src/agent/writeback.ts";
 import { writeFilm, type PriceDelta } from "../src/report/film.ts";
 import { DOWNSTREAM_QUESTIONS, measure, type DownstreamDelta } from "../src/eval/downstream.ts";
+import { allEntities, findContested, summarisePosture, type SubjectOutcome } from "../src/eval/coverage.ts";
 
 /**
  * Prices the error with a real warehouse query. Optional: if DuckDB is not
@@ -70,6 +71,45 @@ async function main(): Promise<void> {
   for (const q of DOWNSTREAM_QUESTIONS) {
     downstreamBefore.set(q.subject, await measure(client, q));
   }
+
+  // Every contested subject in the catalog, not just the hero one.
+  //
+  // Computed here, before anything is written, so this reports the posture of
+  // the catalog AS IT SHIPS — the same thing `npm run coverage` reports. Run it
+  // after the write-back and the hero subject would be scored against a
+  // deprecation canon had just added, and the two numbers would drift apart.
+  // Read-only either way: a survey must not change what it is surveying.
+  const catalogEntities = await allEntities(client);
+  const contested = findContested(catalogEntities);
+
+  const outcomes: SubjectOutcome[] = [];
+  for (const c of contested) {
+    const r = await resolve(client, {
+      subject: c.subject,
+      question: `Which asset should I use for ${c.subject}?`,
+      searchQuery: c.subject,
+      force: true,
+    });
+    const o: SubjectOutcome = {
+      subject: c.subject,
+      candidates: c.members.length,
+      platforms: c.platforms,
+      outcome: r.ruling.outcome,
+      mechanism: r.ruling.mechanism.verdict,
+      ms: r.totals.ms,
+      modelCalls: r.totals.modelCalls,
+      graphReads: r.totals.graphReads,
+    };
+    if (r.ruling.outcome === "RESOLVED") {
+      o.confidence = r.ruling.confidence;
+      o.canonical = r.ruling.queryThis ?? r.ruling.canonical;
+    } else {
+      o.cause = r.adjudication?.abstainCause ?? r.ruling.mechanism.verdict;
+      o.missing = r.ruling.missingEvidence ?? [];
+    }
+    outcomes.push(o);
+  }
+  const posture = summarisePosture(catalogEntities.length, outcomes);
 
   head(1, `A data consumer asks: "${QUESTION}"`);
 
@@ -189,9 +229,20 @@ async function main(): Promise<void> {
   for (const m of abstain.ruling.missingEvidence ?? []) console.log(`  ${C.dim}·${C.reset} ${wrap(m, 92, "    ").trim()}`);
   console.log(`\n  ${C.dim}canon files this back as an open question on both candidates rather than inventing a winner.${C.reset}`);
 
+  head(9, "Every contested question in this catalog");
+  console.log(`\n  ${C.bold}${posture.contested}${C.reset} contested subjects across ${posture.entities} entities`);
+  console.log(`  ${C.green}${posture.ruled}${C.reset} ruled · ${C.yellow}${posture.referredToOwners}${C.reset} referred to owners · ${C.blue}${posture.needsMoreEvidence}${C.reset} need evidence the catalog does not carry`);
+  console.log(`\n  ${C.dim}The refusals name what would settle them, so they are a work list:${C.reset}`);
+  for (const b of posture.backlog.slice(0, 3)) {
+    console.log(`  ${C.dim}·${C.reset} ${String(b.blocks).padStart(3)} subjects blocked on ${b.need}`);
+  }
+  console.log(
+    `\n  ${C.dim}${posture.totals.modelCalls} model calls for all ${posture.contested} — the decision layer is a rule table.${C.reset}`,
+  );
+
   const price = priceDelta();
   if (price) {
-    head(9, "What the wrong table costs");
+    head(10, "What the wrong table costs");
     console.log(
       `\n  from the staging copy    ${C.red}$${price.wrong.revenueUsd.toLocaleString("en-US", { minimumFractionDigits: 2 })}${C.reset}`,
     );
@@ -213,6 +264,7 @@ async function main(): Promise<void> {
     price,
     mode: client.mode,
     downstream,
+    posture,
   });
   console.log(`\n${C.dim}Full evidence report written to ${out}${C.reset}`);
   console.log(`${C.dim}Open it in a browser — it is self-contained, no server needed.${C.reset}`);
