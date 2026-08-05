@@ -194,6 +194,20 @@ function render(data: FilmData): string {
   </div>
 
   <div class="chips" id="chips"></div>
+
+  <div class="neighbourhood">
+    <div class="nb-head">
+      <span class="nb-title">the lineage neighbourhood</span>
+      <span class="nb-key">
+        <span class="k k-transformed">TRANSFORMED</span>
+        <span class="k k-copy">COPY</span>
+        <span class="k k-win">canonical</span>
+      </span>
+    </div>
+    <svg id="lineage" viewBox="0 0 960 260" preserveAspectRatio="xMidYMid meet" role="img"
+         aria-label="Lineage graph of the candidate tables, assembled as evidence lands"></svg>
+  </div>
+
   <div class="board" id="board"></div>
 
   <div class="verdict" id="verdict" hidden>
@@ -323,6 +337,39 @@ code { font-family: var(--mono); font-size: 0.92em; }
 .chip.good b { color: var(--win); }
 .chip.bad b { color: var(--lose); }
 
+/* The lineage neighbourhood: the graph depth, on screen, as it is read. */
+.neighbourhood { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px 16px 6px; margin-bottom: 14px; }
+.nb-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.nb-title { font-family: var(--mono); font-size: 11.5px; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--dim); }
+.nb-key { display: flex; gap: 12px; font-family: var(--mono); font-size: 10.5px; }
+.k::before { content: "—"; margin-right: 5px; font-weight: 700; }
+.k-transformed { color: var(--accent); }
+.k-copy { color: var(--warn); }
+.k-copy::before { content: "--"; }
+.k-win { color: var(--win); }
+.k-win::before { content: "●"; }
+#lineage { width: 100%; height: auto; display: block; }
+#lineage .edge { stroke-width: 1.6; fill: none; opacity: 0; transition: opacity .5s; }
+#lineage .edge.on { opacity: .75; }
+#lineage .edge-transformed { stroke: var(--accent); }
+#lineage .edge-copy { stroke: var(--warn); stroke-dasharray: 5 4; }
+#lineage .node { opacity: 0; transition: opacity .45s, transform .45s; }
+#lineage .node.on { opacity: 1; }
+#lineage .node.dim { opacity: .3; }
+#lineage .node-box { fill: #161c28; stroke: var(--line); stroke-width: 1.2; rx: 7; }
+#lineage .node.win .node-box { fill: rgba(53,208,127,.12); stroke: var(--win); stroke-width: 2; }
+#lineage .node.neg .node-box { stroke: rgba(255,107,107,.45); }
+#lineage .node-name { fill: var(--ink); font-family: var(--mono); font-size: 11px; }
+#lineage .node.win .node-name { fill: var(--win); }
+#lineage .node-sub { fill: var(--dim); font-family: var(--mono); font-size: 9.5px; }
+#lineage .node-score { font-family: var(--mono); font-size: 12px; font-weight: 700; fill: var(--dim); }
+#lineage .node.win .node-score { fill: var(--win); }
+#lineage .node.neg .node-score { fill: var(--lose); }
+#lineage .layer-label { fill: #47506b; font-family: var(--mono); font-size: 9.5px;
+  text-transform: uppercase; letter-spacing: .1em; }
+
 .board { display: grid; gap: 10px; }
 .cand { background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
   padding: 14px 16px; opacity: .28; transition: opacity .45s, border-color .45s, transform .45s, box-shadow .45s; }
@@ -440,6 +487,101 @@ const JS = `
     cards[s.urn] = el;
   });
 
+  // ---- lineage neighbourhood -------------------------------------------
+  //
+  // Laid out by derivation depth read off upstreamLineage: a node sits one
+  // column right of the deepest thing it derives from. That is the argument the
+  // rule table makes, drawn: the raw table is on the left because everything
+  // comes from it, and the canonical table is on the right because business
+  // logic has been applied by the time you reach it.
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  var svg = document.getElementById("lineage");
+  var inSet = {};
+  D.evidence.forEach(function (e) { inSet[e.urn] = e; });
+
+  function depthOf(urn, guard) {
+    var e = inSet[urn];
+    if (!e || (guard || 0) > 8) return 0;
+    var ups = (e.upstreams || []).filter(function (u) { return inSet[u.urn]; });
+    if (!ups.length) return 0;
+    var max = 0;
+    ups.forEach(function (u) { max = Math.max(max, depthOf(u.urn, (guard || 0) + 1) + 1); });
+    return max;
+  }
+
+  var LAYER_NAME = ["source", "landing", "modelled", "materialised", "downstream"];
+  var byDepth = {};
+  D.evidence.forEach(function (e) {
+    var d = depthOf(e.urn);
+    (byDepth[d] = byDepth[d] || []).push(e);
+  });
+  var depths = Object.keys(byDepth).map(Number).sort(function (a, b) { return a - b; });
+
+  var BOX_W = 186, BOX_H = 46, GAP_Y = 20;
+  var colX = {};
+  var spanX = depths.length > 1 ? (960 - BOX_W - 40) / (depths.length - 1) : 0;
+  depths.forEach(function (d, i) { colX[d] = 20 + i * spanX; });
+
+  var pos = {};
+  depths.forEach(function (d) {
+    var col = byDepth[d];
+    var totalH = col.length * BOX_H + (col.length - 1) * GAP_Y;
+    var top = (260 - totalH) / 2;
+    col.forEach(function (e, i) {
+      pos[e.urn] = { x: colX[d], y: top + i * (BOX_H + GAP_Y) };
+    });
+  });
+
+  function el(name, attrs) {
+    var n = document.createElementNS(SVG_NS, name);
+    Object.keys(attrs).forEach(function (k) { n.setAttribute(k, attrs[k]); });
+    return n;
+  }
+
+  // Column labels first, so they sit behind everything.
+  depths.forEach(function (d) {
+    var label = el("text", { x: colX[d], y: 14, class: "layer-label" });
+    label.textContent = LAYER_NAME[Math.min(d, LAYER_NAME.length - 1)];
+    svg.appendChild(label);
+  });
+
+  // Edges before nodes so the boxes paint over the lines.
+  var edgeEls = [];
+  D.evidence.forEach(function (e) {
+    (e.upstreams || []).forEach(function (u) {
+      var from = pos[u.urn], to = pos[e.urn];
+      if (!from || !to) return;
+      var x1 = from.x + BOX_W, y1 = from.y + BOX_H / 2;
+      var x2 = to.x, y2 = to.y + BOX_H / 2;
+      var mid = (x1 + x2) / 2;
+      var p = el("path", {
+        d: "M" + x1 + "," + y1 + " C" + mid + "," + y1 + " " + mid + "," + y2 + " " + x2 + "," + y2,
+        class: "edge " + (u.type === "COPY" ? "edge-copy" : "edge-transformed"),
+      });
+      svg.appendChild(p);
+      edgeEls.push(p);
+    });
+  });
+
+  var nodeEls = {};
+  D.evidence.forEach(function (e) {
+    var p = pos[e.urn];
+    var g = el("g", { class: "node", transform: "translate(" + p.x + "," + p.y + ")" });
+    g.appendChild(el("rect", { class: "node-box", width: BOX_W, height: BOX_H }));
+    var leaf = e.label.split(":").pop().split(".").pop();
+    var name = el("text", { class: "node-name", x: 10, y: 19 });
+    name.textContent = leaf.length > 22 ? leaf.slice(0, 21) + "…" : leaf;
+    g.appendChild(name);
+    var sub = el("text", { class: "node-sub", x: 10, y: 34 });
+    sub.textContent = e.platform + (e.staleDays != null ? "  ·  " + e.staleDays.toFixed(1) + "d" : "");
+    g.appendChild(sub);
+    var score = el("text", { class: "node-score", x: BOX_W - 10, y: 28, "text-anchor": "end" });
+    score.textContent = "";
+    g.appendChild(score);
+    svg.appendChild(g);
+    nodeEls[e.urn] = { g: g, score: score };
+  });
+
   function chip(text, kind) {
     var c = document.createElement("span");
     c.className = "chip " + (kind || "");
@@ -459,6 +601,21 @@ const JS = `
       chip("<b>" + D.stats.entities + "</b> entities searched");
       chip("<b>" + D.scores.length + "</b> candidates answer to the same name");
       Object.keys(cards).forEach(function (u) { cards[u].classList.add("seen"); });
+      // The neighbourhood assembles: nodes first, then the edges between them.
+      var scored = {};
+      D.scores.forEach(function (s) { scored[s.urn] = true; });
+      Object.keys(nodeEls).forEach(function (u, i) {
+        setTimeout(function () { nodeEls[u].g.classList.add("on"); }, 60 * i);
+        // A candidate with no readable schema is set aside rather than ruled on,
+        // and saying so is better than an empty box.
+        if (!scored[u]) {
+          nodeEls[u].score.textContent = "no schema";
+          nodeEls[u].score.setAttribute("font-size", "9");
+        }
+      });
+      edgeEls.forEach(function (p, i) {
+        setTimeout(function () { p.classList.add("on"); }, 260 + 70 * i);
+      });
     }
   });
 
@@ -469,6 +626,12 @@ const JS = `
         var el = cards[s.urn];
         setRail(s.urn, "ownership · deprecation · assertionRunEvent · operation");
         el.querySelector("[data-score]").textContent = (s.total > 0 ? "+" : "") + s.total;
+        // The same number lands on the graph node, so the two views agree.
+        var n = nodeEls[s.urn];
+        if (n) {
+          n.score.textContent = (s.total > 0 ? "+" : "") + s.total;
+          if (s.total < 0) n.g.classList.add("neg");
+        }
         var fill = el.querySelector(".bar-fill");
         fill.style.width = Math.max(3, Math.round((Math.abs(s.total) / maxAbs) * 100)) + "%";
         if (s.total < 0) el.classList.add("neg");
@@ -494,6 +657,9 @@ const JS = `
       Object.keys(cards).forEach(function (u) {
         if (u === winner) cards[u].classList.add("win");
         else cards[u].classList.add("dim");
+      });
+      Object.keys(nodeEls).forEach(function (u) {
+        nodeEls[u].g.classList.add(u === winner ? "win" : "dim");
       });
       D.ruling.traps.forEach(function (t) {
         var el = cards[t.urn];
@@ -558,6 +724,11 @@ const JS = `
       el.querySelector(".rules").innerHTML = "";
       el.querySelector(".trap-why").textContent = "";
     });
+    Object.keys(nodeEls).forEach(function (u) {
+      nodeEls[u].g.setAttribute("class", "node");
+      nodeEls[u].score.textContent = "";
+    });
+    edgeEls.forEach(function (p) { p.classList.remove("on"); });
     setRail("urn:li:dataset:(urn:li:dataPlatform:…)", "—");
   }
 
