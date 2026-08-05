@@ -1,0 +1,9 @@
+{
+  "reasoning": "Three candidates hold customer email addresses. The S3 export ranks low but I am keeping it - an unowned, undocumented dump of eight million emails is exactly the thing someone reaches for when the governed table is harder to find, so the ruling needs to name it.",
+  "shortlist": [
+    "urn:li:dataset:(urn:li:dataPlatform:postgres,ecommerce_prod.public.customers,PROD)",
+    "urn:li:dataset:(urn:li:dataPlatform:snowflake,ANALYTICS.MARTS.DIM_CUSTOMER_CONTACTABLE,PROD)",
+    "urn:li:dataset:(urn:li:dataPlatform:s3,data-exports/adhoc/customer_email_dump_2025_11,PROD)"
+  ],
+  "dismissed": []
+}

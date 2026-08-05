@@ -1,0 +1,13 @@
+{
+  "outcome": "ABSTAIN",
+  "canonical": "",
+  "queryThis": "",
+  "confidence": "low",
+  "rationale": "There is no canonical source for \"daily revenue\" and the catalog cannot manufacture one. ANALYTICS.FINANCE.REVENUE_DAILY and growth_analytics.metrics.daily_revenue are not a good copy and a stale copy - they are two different definitions of the word revenue, both correct for their owner.\n\nFinance recognises revenue net of refunds, excludes shipping, and books it on the delivery date. Growth counts gross bookings including shipping, booked on the order date. Both derive from the same upstream ANALYTICS.MARTS.FCT_ORDERS, both are current within six hours, both carry passing freshness assertions, both have a named business owner, both are tagged Production, and both are documented clearly enough that I can tell you exactly how they differ. Neither is deprecated. Neither is unowned.\n\nEvery signal I can read from metadata is symmetric, which means picking one would not be an inference - it would be me quietly resolving a disagreement between Finance and Growth about what the company means by revenue. That is an organizational decision with a named owner on each side, and laundering it into a catalog fact is worse than leaving the question open. I have filed it back to both owners instead.",
+  "traps": [],
+  "missingEvidence": [
+    "A decision from Finance and Growth on which definition is the company default for unqualified 'revenue', or an agreement that there is no default and both must always be qualified.",
+    "A glossary term for Finance.Revenue with an agreed definition - both datasets currently link to the same term while encoding different semantics, which is the underlying defect.",
+    "If both definitions are legitimate and permanent: distinct glossary terms (recognised revenue vs gross bookings) and renamed datasets, so the collision stops recurring."
+  ]
+}

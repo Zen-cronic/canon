@@ -1,0 +1,14 @@
+{
+  "reasoning": "Two serious candidates, both marts, both named for daily revenue, owned by different teams in different domains. I am shortlisting both plus the orders fact they share as an upstream, because whether they diverge at the source or only in definition changes the answer.",
+  "shortlist": [
+    "urn:li:dataset:(urn:li:dataPlatform:snowflake,ANALYTICS.FINANCE.REVENUE_DAILY,PROD)",
+    "urn:li:dataset:(urn:li:dataPlatform:bigquery,growth_analytics.metrics.daily_revenue,PROD)",
+    "urn:li:dataset:(urn:li:dataPlatform:snowflake,ANALYTICS.MARTS.FCT_ORDERS,PROD)"
+  ],
+  "dismissed": [
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:looker,vw_payouts,PROD)",
+      "because": "Payouts are settlement, not recognised revenue."
+    }
+  ]
+}

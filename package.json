@@ -1,0 +1,27 @@
+{
+  "name": "canon",
+  "version": "0.1.0",
+  "private": true,
+  "description": "canon — an agent that decides which of your five `orders` tables is the real one, and writes the ruling back into DataHub.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "demo": "node scripts/demo.ts",
+    "resolve": "node scripts/resolve.ts",
+    "eval": "node scripts/eval.ts",
+    "build:catalog": "node scripts/build-catalog.ts",
+    "test": "node --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "ci": "npm run typecheck && npm test"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.115.0"
+  }
+}

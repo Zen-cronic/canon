@@ -1,0 +1,30 @@
+{
+  "outcome": "RESOLVED",
+  "canonical": "urn:li:dataset:(urn:li:dataPlatform:dbt,analytics.marts.fct_orders,PROD)",
+  "queryThis": "urn:li:dataset:(urn:li:dataPlatform:snowflake,ANALYTICS.MARTS.FCT_ORDERS,PROD)",
+  "confidence": "high",
+  "rationale": "Query ANALYTICS.MARTS.FCT_ORDERS. It is the Snowflake materialization of the dbt model analytics.marts.fct_orders, and DataHub records the two as siblings, so they are one logical asset: the dbt model is the definition, the Snowflake table is what you can point SQL at. It is the only candidate where the business rules a consumer would assume have actually been applied - refunds netted into net_amount_usd, test orders excluded, currency normalised to USD - and the only one carrying passing freshness, uniqueness and volume assertions, a curated column-level description, a named technical owner and a business owner. It was last written three hours ago.\n\nThe reason this needs saying at all is that all three obvious heuristics pick something else, and each fails differently. Ranking by search relevance returns stg_purchase_orders - supplier procurement, not customer orders at all - because name similarity plus query volume is what search ranks on and 'purchase_orders' contains 'orders'. Ranking by freshness picks the raw Postgres table, written to four minutes ago, because an operational table is always fresher than anything derived from it. Ranking by human popularity picks the staging copy, which four analysts queried this week and which is three days stale with a FAILING freshness assertion - popularity here is a saved query nobody updated after the mart shipped, so it measures habit, not correctness. Every one of those is a defensible-sounding rule, and every one of them hands you a wrong number.",
+  "traps": [
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:snowflake,ANALYTICS.STAGING.STG_ORDERS,PROD)",
+      "why": "Three days stale with a failing freshness assertion, and four analysts queried it this week - so the wrong number is already in circulation. It is also a raw copy: total_cents is unconverted and refunds are not netted, so any revenue figure from it is both out of date and gross rather than net.",
+      "severity": "blocker"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:postgres,ecommerce_prod.public.orders,PROD)",
+      "why": "The operational table behind checkout. Rows are mutated in place on refund and cancel, so the same query run twice returns different history and yesterday's number changes overnight. It carries a PII tag, and querying it puts analytical load on the database serving live checkout.",
+      "severity": "blocker"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:bigquery,legacy_dw.reporting.orders_snapshot_2024,PROD)",
+      "why": "Explicitly deprecated and frozen at 2024-12-31. Its amount column is not currency-normalised - it depends on the storefront - so totals across regions are silently meaningless. One Looker dashboard still reads it.",
+      "severity": "blocker"
+    },
+    {
+      "urn": "urn:li:dataset:(urn:li:dataPlatform:looker,orders_explore,PROD)",
+      "why": "Not a table - a Looker explore, so there is nothing to query in SQL. It matters here because it is built on the deprecated 2024 snapshot, which means 24 people are reading frozen 2024 data through a live-looking dashboard.",
+      "severity": "warning"
+    }
+  ],
+  "missingEvidence": []
+}
