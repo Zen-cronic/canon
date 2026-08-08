@@ -1,0 +1,36 @@
+{
+  "fade": 0.28,
+  "total": 141.4,
+  "takes": [
+    {
+      "name": "act0",
+      "file": "/home/zin-kg/code/hackathons/datahub-2026/placeholder-2/film/takes/act0/capture.mp4",
+      "dur": 11.8
+    },
+    {
+      "name": "act1",
+      "file": "/home/zin-kg/code/hackathons/datahub-2026/placeholder-2/film/takes/act1/capture.mp4",
+      "dur": 15.433333
+    },
+    {
+      "name": "act2",
+      "file": "/home/zin-kg/code/hackathons/datahub-2026/placeholder-2/film/takes/act2/capture.mp4",
+      "dur": 40.666667
+    },
+    {
+      "name": "act3",
+      "file": "/home/zin-kg/code/hackathons/datahub-2026/placeholder-2/film/takes/act3/capture.mp4",
+      "dur": 16.866667
+    },
+    {
+      "name": "act4",
+      "file": "/home/zin-kg/code/hackathons/datahub-2026/placeholder-2/film/takes/act4/capture.mp4",
+      "dur": 51.666667
+    },
+    {
+      "name": "act5",
+      "file": "/home/zin-kg/code/hackathons/datahub-2026/placeholder-2/film/takes/act5/capture.mp4",
+      "dur": 6.366667
+    }
+  ]
+}

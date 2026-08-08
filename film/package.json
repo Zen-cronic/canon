@@ -1,0 +1,12 @@
+{
+  "name": "canon-film",
+  "private": true,
+  "type": "module",
+  "description": "The demo video, rendered from source: Playwright drives the real report, FFmpeg records the window, ffmpeg composites the cut.",
+  "scripts": {
+    "verify": "node verify.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.58.1"
+  }
+}
