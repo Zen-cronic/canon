@@ -4,7 +4,7 @@
 // preference. A video the judges cannot watch scores zero on a fifth of the
 // rubric, and there is no appeal after the deadline.
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, openSync, readSync, closeSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -70,6 +70,26 @@ for (const [label, ok] of checks) {
 // Narration is not a hard gate — a well-captioned silent cut is submittable —
 // but shipping one by accident is a different thing from choosing one.
 console.log(`\n  ${a ? "PASS" : "NOTE"}  audio track ${a ? `(${a.codec_name})` : "absent — no voiceover yet"}`);
+
+// Loudness, when there is narration to measure. YouTube normalizes loud audio
+// DOWN toward -14 LUFS but never boosts quiet audio up, so a quiet master just
+// plays quiet for the judge. Measured at -21.8 the first time this ran, which
+// is why the check exists.
+if (a) {
+  // ebur128 reports on stderr, which execFileSync does not hand back — read it
+  // from spawnSync instead of silently measuring nothing.
+  const log = spawnSync(
+    "ffmpeg",
+    ["-nostats", "-i", file, "-filter_complex", "ebur128", "-f", "null", "-"],
+    { encoding: "utf8" },
+  ).stderr ?? "";
+  const lufs = Number(log.match(/I:\s*(-?[\d.]+)\s*LUFS/g)?.at(-1)?.match(/(-?[\d.]+)/)?.[1]);
+  if (Number.isFinite(lufs)) {
+    const ok = lufs >= -20 && lufs <= -12;
+    if (!ok) failed++;
+    console.log(`  ${ok ? "PASS" : "FAIL"}  loudness ${lufs.toFixed(1)} LUFS (want -20..-12)`);
+  }
+}
 
 console.log(`
   Manual gates, not checkable from the file:
