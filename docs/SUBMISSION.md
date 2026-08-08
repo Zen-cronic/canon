@@ -28,7 +28,15 @@ snapshot, a staging table nobody deleted — and the catalog cheerfully returns
 all five. It records which exist. It does not say which one you are supposed to
 cite.
 
-The difference between those two figures was **$829,966.60**, 11.65%
+This is not a small-catalog problem. DataHub's own published customer story for
+a 400,000-table estate, growing by 500 tables a day, describes analysts
+*"reverse-engineering trust, going through code, tracing lineage, and dropping
+Slack messages hoping someone would respond"* — and a governance program that
+narrowed those 400,000 tables to 100,000 governed, AI-ready assets. Ranking on
+relevance alone surfaces the deprecated staging table above the production one,
+because relevance and trustworthiness are not the same signal.
+
+The difference between our two figures was **$829,966.60**, 11.65%
 overstated, and it came from a staging copy that is three days behind, includes
 518 internal test orders, and never nets off $334,160.03 of refunds. An agent
 asking that catalog which table to use would have picked the wrong one too —
@@ -36,7 +44,8 @@ querying a stale table is the first way a context layer fails, and it fails
 quietly.
 
 A catalog that cannot answer that question is a search index with governance
-metadata attached. canon is the part that rules.
+metadata attached. canon is the part that rules — it decides which table the
+next query, and the next agent, gets handed.
 
 ### What it does
 
